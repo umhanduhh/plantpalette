@@ -162,7 +162,7 @@ export default function FriendsPage() {
 
       if (findError) throw findError;
 
-      if (!friendUser) {
+      if (!friendUser || !friendUser.user_id) {
         setError('No user found with that email address');
         return;
       }
