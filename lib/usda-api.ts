@@ -11,7 +11,8 @@ const PLANT_BASED_CATEGORIES = [
   'Nut and Seed Products',
   'Cereal Grains and Pasta',
   'Beverages',
-  'Baked Products' // Included but will be filtered further by keywords
+  'Baked Products',
+  'Spices and Herbs'
 ];
 
 // Keywords that indicate non-plant-based foods
@@ -57,7 +58,7 @@ export async function searchFoods(query: string, pageSize: number = 50): Promise
   try {
     // Request more results to account for filtering
     const response = await fetch(
-      `${USDA_BASE_URL}/foods/search?query=${encodeURIComponent(query)}&pageSize=${pageSize}&dataType=Foundation&api_key=${USDA_API_KEY}`
+      `${USDA_BASE_URL}/foods/search?query=${encodeURIComponent(query)}&pageSize=${pageSize}&dataType=Foundation,SR%20Legacy&api_key=${USDA_API_KEY}`
     );
 
     if (!response.ok) {
