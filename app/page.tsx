@@ -27,12 +27,13 @@ export default function Home() {
         email,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          shouldCreateUser: true,
         },
       });
 
       if (error) throw error;
 
-      setMessage('Check your email for the login link!');
+      setMessage('Check your email for the confirmation link!');
       setEmail('');
     } catch (error: any) {
       setMessage(error.message || 'Something went wrong');
@@ -85,13 +86,13 @@ export default function Home() {
               className="w-full py-4 rounded-xl font-semibold text-white text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ background: 'linear-gradient(135deg, #d4006f, #ff6b35)' }}
             >
-              {loading ? 'Sending...' : 'Send Magic Link'}
+              {loading ? 'Sending...' : 'Send Confirmation Link'}
             </button>
           </form>
 
           {message && (
             <div className={`mt-4 p-4 rounded-xl text-center ${
-              message.includes('Check your email')
+              message.includes('Check your email') || message.includes('confirmation link')
                 ? 'bg-green-50 text-green-700'
                 : 'bg-red-50 text-red-700'
             }`}>
@@ -100,7 +101,7 @@ export default function Home() {
           )}
 
           <p className="mt-6 text-sm text-gray-500 text-center">
-            We'll send you a magic link to sign in. No password needed!
+            We'll send you a confirmation link to sign in. No password needed!
           </p>
         </div>
 

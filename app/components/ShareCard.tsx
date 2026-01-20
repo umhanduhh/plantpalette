@@ -16,7 +16,7 @@ interface ShareCardProps {
 const funFacts = [
   "I'm eating the rainbow! 🌈",
   "Building a diverse diet, one food at a time",
-  "Variety is the spice of plant-based life",
+  "Variety is the spice of life",
   "Every color = different nutrients",
   "Celebrating food diversity this week",
   "Adding more variety to my plate",
