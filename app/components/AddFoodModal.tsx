@@ -16,12 +16,10 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
   const [searchResults, setSearchResults] = useState<USDAFood[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedFood, setSelectedFood] = useState<USDAFood | null>(null);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [addingFood, setAddingFood] = useState(false);
+  const [selectedFoods, setSelectedFoods] = useState<Set<number>>(new Set());
+  const [addingFoods, setAddingFoods] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [showDuplicateMessage, setShowDuplicateMessage] = useState(false);
-  const [duplicateFoodName, setDuplicateFoodName] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -67,15 +65,22 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
     }
   }
 
-  function handleSelectFood(food: USDAFood) {
-    setSelectedFood(food);
-    setShowConfirmation(true);
+  function toggleFoodSelection(fdcId: number) {
+    const newSelected = new Set(selectedFoods);
+    if (newSelected.has(fdcId)) {
+      newSelected.delete(fdcId);
+    } else {
+      newSelected.add(fdcId);
+    }
+    setSelectedFoods(newSelected);
   }
 
-  async function handleConfirmYes() {
-    if (!selectedFood) return;
+  async function handleAddSelectedFoods() {
+    if (selectedFoods.size === 0) return;
 
-    setAddingFood(true);
+    setAddingFoods(true);
+    setError('');
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -86,7 +91,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
       // Get current week's Monday and Sunday in local timezone
       const today = new Date();
       const dayOfWeek = today.getDay();
-      const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Adjust when today is Sunday
+      const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
       const monday = new Date(today);
       monday.setDate(today.getDate() + diff);
       monday.setHours(0, 0, 0, 0);
@@ -97,89 +102,81 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
       const mondayStr = formatLocalDate(monday);
       const sundayStr = formatLocalDate(sunday);
 
-      // Check if this food has already been logged this week
-      const { data: existingLogs, error: checkError } = await supabase
+      // Get foods to add
+      const foodsToAdd = searchResults.filter(food => selectedFoods.has(food.fdcId));
+
+      // Check which foods are already logged this week
+      const { data: existingLogs } = await supabase
         .from('food_logs')
-        .select('id, food_name')
+        .select('fdc_id')
         .eq('user_id', user.id)
-        .eq('fdc_id', selectedFood.fdcId)
         .gte('logged_date', mondayStr)
         .lte('logged_date', sundayStr);
 
-      if (checkError) throw checkError;
+      const existingFdcIds = new Set(existingLogs?.map(log => log.fdc_id) || []);
 
-      // If food already logged this week, show celebratory message
-      if (existingLogs && existingLogs.length > 0) {
-        setDuplicateFoodName(selectedFood.description);
-        setShowDuplicateMessage(true);
-        setShowConfirmation(false);
-        setSelectedFood(null);
-        setSearchQuery('');
-        setSearchResults([]);
+      // Filter out duplicates and prepare new foods to log
+      const newFoods = foodsToAdd.filter(food => !existingFdcIds.has(food.fdcId));
+      const duplicates = foodsToAdd.filter(food => existingFdcIds.has(food.fdcId));
 
-        // Hide duplicate message and close modal after 2.5 seconds
-        setTimeout(() => {
-          setShowDuplicateMessage(false);
-          setDuplicateFoodName('');
-          onClose();
-        }, 2500);
-
-        setAddingFood(false);
-        return;
-      }
-
-      // Log the food using local timezone
-      const todayStr = formatLocalDate(new Date());
-      const { error: logError } = await supabase
-        .from('food_logs')
-        .insert({
+      // Add new foods
+      if (newFoods.length > 0) {
+        const todayStr = formatLocalDate(new Date());
+        const logsToInsert = newFoods.map(food => ({
           user_id: user.id,
-          fdc_id: selectedFood.fdcId,
-          food_name: selectedFood.description,
-          food_data_type: selectedFood.dataType,
-          food_nutrients: selectedFood.foodNutrients,
+          fdc_id: food.fdcId,
+          food_name: food.description,
+          food_data_type: food.dataType,
+          food_nutrients: food.foodNutrients,
           logged_date: todayStr,
           logged_at: new Date().toISOString(),
-        });
+        }));
 
-      if (logError) throw logError;
+        const { error: logError } = await supabase
+          .from('food_logs')
+          .insert(logsToInsert);
+
+        if (logError) throw logError;
+      }
 
       // Show success message
+      let message = '';
+      if (newFoods.length > 0 && duplicates.length === 0) {
+        message = `Added ${newFoods.length} food${newFoods.length > 1 ? 's' : ''}!`;
+      } else if (newFoods.length > 0 && duplicates.length > 0) {
+        message = `Added ${newFoods.length} new food${newFoods.length > 1 ? 's' : ''}! ${duplicates.length} already logged this week.`;
+      } else {
+        message = `All ${duplicates.length} food${duplicates.length > 1 ? 's were' : ' was'} already logged this week!`;
+      }
+
+      setSuccessMessage(message);
       setShowSuccess(true);
-      setShowConfirmation(false);
-      setSelectedFood(null);
+      setSelectedFoods(new Set());
       setSearchQuery('');
       setSearchResults([]);
 
-      // Hide success message and close modal after 1.5 seconds
+      // Hide success message and close modal after 2 seconds
       setTimeout(() => {
         setShowSuccess(false);
+        setSuccessMessage('');
         onFoodAdded();
         onClose();
-      }, 1500);
+      }, 2000);
 
     } catch (err: any) {
-      setError(err.message || 'Failed to add food. Please try again.');
-      setShowConfirmation(false);
+      setError(err.message || 'Failed to add foods. Please try again.');
     } finally {
-      setAddingFood(false);
+      setAddingFoods(false);
     }
-  }
-
-  function handleConfirmNo() {
-    setShowConfirmation(false);
-    setSelectedFood(null);
   }
 
   function handleClose() {
     setSearchQuery('');
     setSearchResults([]);
     setError('');
-    setSelectedFood(null);
-    setShowConfirmation(false);
+    setSelectedFoods(new Set());
     setShowSuccess(false);
-    setShowDuplicateMessage(false);
-    setDuplicateFoodName('');
+    setSuccessMessage('');
     onClose();
   }
 
@@ -192,62 +189,21 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
         {showSuccess && (
           <div className="text-center py-8">
             <div className="text-6xl mb-4">🌱</div>
-            <p className="text-2xl font-bold" style={{ color: '#52b788' }}>
-              Added!
-            </p>
-          </div>
-        )}
-
-        {/* Duplicate Food Message */}
-        {showDuplicateMessage && (
-          <div className="text-center py-8">
-            <div className="text-6xl mb-4">🎉</div>
-            <p className="text-2xl font-bold mb-2" style={{ color: '#d4006f' }}>
-              Great job!
+            <p className="text-2xl font-bold mb-2" style={{ color: '#52b788' }}>
+              Success!
             </p>
             <p className="text-lg text-gray-700">
-              You already logged <span className="font-semibold">{duplicateFoodName}</span> this week!
+              {successMessage}
             </p>
-          </div>
-        )}
-
-        {/* Confirmation Dialog */}
-        {showConfirmation && selectedFood && !showSuccess && (
-          <div className="text-center">
-            <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold mb-4" style={{ color: '#d4006f' }}>
-              Did you eat this?
-            </h2>
-            <div className="bg-gray-50 rounded-xl p-4 mb-6">
-              <p className="font-semibold text-lg text-gray-900">{selectedFood.description}</p>
-              <p className="text-sm text-gray-500 mt-1">{selectedFood.dataType}</p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleConfirmNo}
-                disabled={addingFood}
-                className="flex-1 py-3 rounded-xl font-semibold border-2 transition-colors disabled:opacity-50"
-                style={{ borderColor: '#d4006f', color: '#d4006f' }}
-              >
-                No
-              </button>
-              <button
-                onClick={handleConfirmYes}
-                disabled={addingFood}
-                className="flex-1 py-3 rounded-xl font-semibold text-white transition-colors disabled:opacity-50"
-                style={{ backgroundColor: '#52b788' }}
-              >
-                {addingFood ? 'Adding...' : 'Yes!'}
-              </button>
-            </div>
           </div>
         )}
 
         {/* Search Interface */}
-        {!showConfirmation && !showSuccess && (
+        {!showSuccess && (
           <>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold" style={{ color: '#d4006f' }}>
-                Add a Food
+                Add Foods
               </h2>
               <button
                 onClick={handleClose}
@@ -261,7 +217,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
             <div className="mb-4">
               <input
                 type="text"
-                placeholder="Search for a food..."
+                placeholder="Search for foods..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-4 py-4 text-lg rounded-xl border-2 border-gray-200 focus:border-[#d4006f] focus:outline-none transition-colors"
@@ -283,20 +239,56 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
               </div>
             )}
 
-            {/* Search Results */}
+            {/* Search Results with Checkboxes */}
             {!loading && searchResults.length > 0 && (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {searchResults.map((food) => (
-                  <button
-                    key={food.fdcId}
-                    onClick={() => handleSelectFood(food)}
-                    className="w-full text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
-                  >
-                    <p className="font-semibold text-gray-900">{food.description}</p>
-                    <p className="text-sm text-gray-500 mt-1">{food.dataType}</p>
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="space-y-2 max-h-96 overflow-y-auto mb-4">
+                  {searchResults.map((food) => (
+                    <button
+                      key={food.fdcId}
+                      onClick={() => toggleFoodSelection(food.fdcId)}
+                      className={`w-full text-left p-4 rounded-xl transition-all flex items-start gap-3 ${
+                        selectedFoods.has(food.fdcId)
+                          ? 'bg-green-50 border-2 border-green-400'
+                          : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
+                      }`}
+                    >
+                      <div className="flex-shrink-0 mt-1">
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                          selectedFoods.has(food.fdcId)
+                            ? 'bg-green-500 border-green-500'
+                            : 'border-gray-300'
+                        }`}>
+                          {selectedFoods.has(food.fdcId) && (
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">{food.description}</p>
+                        <p className="text-sm text-gray-500 mt-1">{food.dataType}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Add Selected Button */}
+                <button
+                  onClick={handleAddSelectedFoods}
+                  disabled={selectedFoods.size === 0 || addingFoods}
+                  className="w-full py-4 rounded-xl font-semibold text-white text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ background: 'linear-gradient(135deg, #52b788, #4cc9f0)' }}
+                >
+                  {addingFoods
+                    ? 'Adding...'
+                    : selectedFoods.size === 0
+                    ? 'Select foods to add'
+                    : `Add ${selectedFoods.size} food${selectedFoods.size > 1 ? 's' : ''}`
+                  }
+                </button>
+              </>
             )}
 
             {/* Empty State */}

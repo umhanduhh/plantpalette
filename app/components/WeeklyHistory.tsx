@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FoodLog } from '@/lib/types';
+import { FoodLog, formatLocalDate } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import NutritionInfoCard from './NutritionInfoCard';
 
@@ -22,11 +22,10 @@ export default function WeeklyHistory({ foodLogs, weekStartDate, weekEndDate, on
   const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   // Initialize all days
-  const startDate = new Date(weekStartDate);
+  const [year, month, day] = weekStartDate.split('-').map(Number);
   for (let i = 0; i < 7; i++) {
-    const date = new Date(startDate);
-    date.setDate(startDate.getDate() + i);
-    const dateStr = date.toISOString().split('T')[0];
+    const date = new Date(year, month - 1, day + i);
+    const dateStr = formatLocalDate(date);
     groupedByDay[dateStr] = [];
   }
 
@@ -72,9 +71,11 @@ export default function WeeklyHistory({ foodLogs, weekStartDate, weekEndDate, on
       <div className="space-y-4">
         {sortedDates.map((dateStr, index) => {
           const logs = groupedByDay[dateStr];
-          const date = new Date(dateStr);
+          const [y, m, d] = dateStr.split('-').map(Number);
+          const date = new Date(y, m - 1, d);
           const dayName = weekDays[index];
-          const isToday = dateStr === new Date().toISOString().split('T')[0];
+          const todayStr = formatLocalDate(new Date());
+          const isToday = dateStr === todayStr;
 
           if (logs.length === 0) return null;
 

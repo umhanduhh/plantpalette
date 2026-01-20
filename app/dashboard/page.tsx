@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { FoodLog, User, getWeekDates } from '@/lib/types';
+import { FoodLog, User, getWeekDates, formatLocalDate } from '@/lib/types';
 import AddFoodModal from '../components/AddFoodModal';
 import WeeklyHistory from '../components/WeeklyHistory';
 import ShareCard from '../components/ShareCard';
@@ -142,9 +142,9 @@ export default function Dashboard() {
           {/* Days of Week Indicators */}
           <div className="flex justify-between mb-4">
             {weekDays.map((day, index) => {
-              const date = new Date(weekDates.week_starting_date);
-              date.setDate(date.getDate() + index);
-              const dateStr = date.toISOString().split('T')[0];
+              const [year, month, dayOfMonth] = weekDates.week_starting_date.split('-').map(Number);
+              const date = new Date(year, month - 1, dayOfMonth + index);
+              const dateStr = formatLocalDate(date);
               const hasLogs = foodLogs.some(log => log.logged_date === dateStr);
 
               return (
