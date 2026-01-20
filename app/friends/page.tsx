@@ -162,14 +162,12 @@ export default function FriendsPage() {
 
       if (findError) throw findError;
 
-      if (!friendUser || friendUser.length === 0) {
+      if (!friendUser) {
         setError('No user found with that email address');
         return;
       }
 
-      const foundUser = friendUser[0];
-
-      if (foundUser.user_id === user.id) {
+      if (friendUser.user_id === user.id) {
         setError('You cannot add yourself as a friend');
         return;
       }
@@ -178,7 +176,7 @@ export default function FriendsPage() {
       const { data: existing } = await supabase
         .from('friendships')
         .select('*')
-        .or(`and(user_id.eq.${user.id},friend_id.eq.${foundUser.user_id}),and(user_id.eq.${foundUser.user_id},friend_id.eq.${user.id})`)
+        .or(`and(user_id.eq.${user.id},friend_id.eq.${friendUser.user_id}),and(user_id.eq.${friendUser.user_id},friend_id.eq.${user.id})`)
         .maybeSingle();
 
       if (existing) {
@@ -197,7 +195,7 @@ export default function FriendsPage() {
         .from('friendships')
         .insert({
           user_id: user.id,
-          friend_id: foundUser.user_id,
+          friend_id: friendUser.user_id,
           status: 'pending'
         });
 
