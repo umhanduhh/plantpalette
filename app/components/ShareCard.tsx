@@ -44,13 +44,22 @@ export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartD
     setIsGenerating(true);
 
     try {
+      // Temporarily remove transform for capture
+      const originalTransform = cardRef.current.style.transform;
+      cardRef.current.style.transform = 'none';
+
       // Generate image from HTML (Instagram Story size: 1080x1920)
       const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
+        scale: 1,
         backgroundColor: '#ffffff',
         width: 1080,
         height: 1920,
+        windowWidth: 1080,
+        windowHeight: 1920,
       });
+
+      // Restore transform
+      cardRef.current.style.transform = originalTransform;
 
       // Convert to blob
       canvas.toBlob(async (blob) => {
