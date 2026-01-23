@@ -1,48 +1,19 @@
-import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const token_hash = searchParams.get('token_hash') || searchParams.get('token');
   const type = searchParams.get('type');
-  const code = searchParams.get('code');
 
-  const cookieStore = await cookies();
-
-  const supabase = createServerClient(
+  const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        },
-      },
-    }
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
   try {
-    // Handle PKCE code from confirmation link
-    if (code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-      if (error) {
-        console.error('Code exchange error:', error.message);
-        return NextResponse.redirect(`${origin}/auth/error`);
-      }
-
-      return NextResponse.redirect(`${origin}/dashboard`);
-    }
-
-    // Handle token_hash from magic link
     if (token_hash && type) {
-      const { error } = await supabase.auth.verifyOtp({
+      const { data, error } = await supabase.auth.verifyOtp({
         token_hash,
         type: type as any,
       });
@@ -52,7 +23,14 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(`${origin}/auth/error`);
       }
 
-      return NextResponse.redirect(`${origin}/dashboard`);
+      if (!data.session) {
+        console.error('No session returned from verifyOtp');
+        return NextResponse.redirect(`${origin}/auth/error`);
+      }
+
+      // Redirect to confirm page with tokens in URL fragment
+      const redirectUrl = `${origin}/auth/confirm#access_token=${data.session.access_token}&refresh_token=${data.session.refresh_token}&expires_in=${data.session.expires_in}&token_type=bearer`;
+      return NextResponse.redirect(redirectUrl);
     }
 
     console.error('No valid auth parameters provided');
