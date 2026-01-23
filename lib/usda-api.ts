@@ -12,16 +12,33 @@ const PLANT_BASED_CATEGORIES = [
   'Cereal Grains and Pasta',
   'Beverages',
   'Baked Products',
-  'Spices and Herbs'
+  'Spices and Herbs',
+  'Breakfast Cereals',
+  'Soups, Sauces, and Gravies',
+  'Snacks',
+  'Sweets',
+  'Fats and Oils',
+  'Baby Foods'
 ];
 
 // Keywords that indicate non-plant-based foods
 const NON_PLANT_KEYWORDS = [
+  // Meats
   'beef', 'pork', 'chicken', 'turkey', 'lamb', 'veal', 'duck', 'goose',
   'meat', 'bacon', 'sausage', 'ham', 'steak', 'ground beef', 'ground pork',
+  'pepperoni', 'salami', 'prosciutto', 'hot dog', 'bologna', 'pastrami',
+  'venison', 'bison', 'rabbit', 'pheasant', 'quail',
+  // Seafood
   'fish', 'salmon', 'tuna', 'cod', 'shrimp', 'crab', 'lobster', 'seafood',
+  'tilapia', 'trout', 'halibut', 'mahi', 'sardine', 'anchovy', 'oyster',
+  'clam', 'mussel', 'scallop', 'squid', 'octopus', 'crawfish', 'prawn',
+  // Dairy
   'milk', 'cheese', 'yogurt', 'butter', 'cream', 'whey', 'casein',
-  'egg', 'eggs', 'gelatin', 'lard', 'tallow'
+  'ice cream', 'custard', 'pudding', 'cottage cheese', 'ricotta', 'mozzarella',
+  'cheddar', 'parmesan', 'gouda', 'brie', 'feta', 'cream cheese',
+  // Eggs and other
+  'egg', 'eggs', 'gelatin', 'lard', 'tallow', 'suet', 'bone broth',
+  'chicken broth', 'beef broth', 'fish sauce', 'worcestershire'
 ];
 
 function isLikelyPlantBased(food: USDAFood): boolean {
@@ -58,7 +75,7 @@ export async function searchFoods(query: string, pageSize: number = 50): Promise
   try {
     // Request more results to account for filtering
     const response = await fetch(
-      `${USDA_BASE_URL}/foods/search?query=${encodeURIComponent(query)}&pageSize=${pageSize}&dataType=Foundation,SR%20Legacy&api_key=${USDA_API_KEY}`
+      `${USDA_BASE_URL}/foods/search?query=${encodeURIComponent(query)}&pageSize=${pageSize * 2}&api_key=${USDA_API_KEY}`
     );
 
     if (!response.ok) {

@@ -16,7 +16,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
   const [searchResults, setSearchResults] = useState<USDAFood[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedFoods, setSelectedFoods] = useState<Set<number>>(new Set());
+  const [selectedFoods, setSelectedFoods] = useState<Map<number, USDAFood>>(new Map());
   const [addingFoods, setAddingFoods] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -65,12 +65,12 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
     }
   }
 
-  function toggleFoodSelection(fdcId: number) {
-    const newSelected = new Set(selectedFoods);
-    if (newSelected.has(fdcId)) {
-      newSelected.delete(fdcId);
+  function toggleFoodSelection(food: USDAFood) {
+    const newSelected = new Map(selectedFoods);
+    if (newSelected.has(food.fdcId)) {
+      newSelected.delete(food.fdcId);
     } else {
-      newSelected.add(fdcId);
+      newSelected.set(food.fdcId, food);
     }
     setSelectedFoods(newSelected);
   }
@@ -103,7 +103,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
       const sundayStr = formatLocalDate(sunday);
 
       // Get foods to add
-      const foodsToAdd = searchResults.filter(food => selectedFoods.has(food.fdcId));
+      const foodsToAdd = Array.from(selectedFoods.values());
 
       // Check which foods are already logged this week
       const { data: existingLogs } = await supabase
@@ -151,7 +151,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
 
       setSuccessMessage(message);
       setShowSuccess(true);
-      setSelectedFoods(new Set());
+      setSelectedFoods(new Map());
       setSearchQuery('');
       setSearchResults([]);
 
@@ -174,7 +174,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
     setSearchQuery('');
     setSearchResults([]);
     setError('');
-    setSelectedFoods(new Set());
+    setSelectedFoods(new Map());
     setShowSuccess(false);
     setSuccessMessage('');
     onClose();
@@ -246,7 +246,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
                   {searchResults.map((food) => (
                     <button
                       key={food.fdcId}
-                      onClick={() => toggleFoodSelection(food.fdcId)}
+                      onClick={() => toggleFoodSelection(food)}
                       className={`w-full text-left p-4 rounded-xl transition-all flex items-start gap-3 ${
                         selectedFoods.has(food.fdcId)
                           ? 'bg-green-50 border-2 border-green-400'
@@ -275,19 +275,19 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
                 </div>
 
                 {/* Add Selected Button */}
-                <button
-                  onClick={handleAddSelectedFoods}
-                  disabled={selectedFoods.size === 0 || addingFoods}
-                  className="w-full py-4 rounded-xl font-semibold text-white text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ background: 'linear-gradient(135deg, #52b788, #4cc9f0)' }}
-                >
-                  {addingFoods
-                    ? 'Adding...'
-                    : selectedFoods.size === 0
-                    ? 'Select foods to add'
-                    : `Add ${selectedFoods.size} food${selectedFoods.size > 1 ? 's' : ''}`
-                  }
-                </button>
+                {selectedFoods.size > 0 && (
+                  <button
+                    onClick={handleAddSelectedFoods}
+                    disabled={addingFoods}
+                    className="w-full py-4 rounded-xl font-semibold text-white text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ background: 'linear-gradient(135deg, #52b788, #4cc9f0)' }}
+                  >
+                    {addingFoods
+                      ? 'Adding...'
+                      : `Add ${selectedFoods.size} food${selectedFoods.size > 1 ? 's' : ''}`
+                    }
+                  </button>
+                )}
               </>
             )}
 
