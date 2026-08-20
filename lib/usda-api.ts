@@ -19,6 +19,28 @@ const ALLOWED_FOOD_CATEGORIES = new Set([
 // (e.g. "Spices, turmeric, ground"). For these, the food name is segment 2.
 const CATEGORY_PREFIXES_TO_STRIP = new Set(['spices', 'herbs', 'nuts', 'seeds']);
 
+// First-segment food names that are too generic to be the whole canonical
+// name — we expand them with the following segments so different varieties
+// get distinct entries (e.g. "Green Snap Beans" vs "Red Kidney Beans").
+const GENERIC_BASE_FOODS = new Set(['beans', 'peas', 'peppers', 'rice', 'squash']);
+
+// Segments that describe preparation or state, not the food itself. Skipped
+// when building canonical names for generic-base foods.
+const PREP_MODIFIERS = new Set([
+  'raw', 'cooked', 'boiled', 'baked', 'steamed', 'roasted', 'fried',
+  'dried', 'frozen', 'canned', 'uncooked', 'unprepared', 'blanched',
+  'with salt', 'without salt', 'with skin', 'without skin',
+  'mature seeds', 'immature seeds',
+  'drained', 'drained solids', 'solids and liquids',
+  'sulfured', 'unsulfured',
+  'chopped', 'sliced', 'shredded', 'mashed', 'whole',
+  'low sodium', 'sodium added',
+  'in tap water', 'in water',
+  'and rinsed', 'drained and rinsed', 'rinsed in tap water',
+  'vacuum pack', 'regular',
+  'unenriched', 'enriched',
+]);
+
 function toCanonicalName(description: string): string {
   // "Chickpeas (garbanzo beans, bengal gram), mature seeds, raw" → "Chickpeas, mature seeds, raw"
   const withoutParens = description.replace(/\s*\([^)]*\)/g, '').trim();
@@ -26,8 +48,19 @@ function toCanonicalName(description: string): string {
   if (segments.length === 0) return description;
 
   let name = segments[0];
-  if (CATEGORY_PREFIXES_TO_STRIP.has(name.toLowerCase()) && segments.length >= 2) {
+  const firstLower = name.toLowerCase();
+
+  if (CATEGORY_PREFIXES_TO_STRIP.has(firstLower) && segments.length >= 2) {
     name = segments[1];
+  } else if (GENERIC_BASE_FOODS.has(firstLower)) {
+    // USDA orders modifiers broad-to-specific ("Beans, snap, green"), so we
+    // reverse them for a natural adjective order ("Green Snap Beans").
+    const modifiers = segments.slice(1)
+      .filter(s => !PREP_MODIFIERS.has(s.toLowerCase()))
+      .reverse();
+    if (modifiers.length > 0) {
+      name = modifiers.join(' ') + ' ' + name;
+    }
   }
 
   return name.replace(/\b\w/g, c => c.toUpperCase());
