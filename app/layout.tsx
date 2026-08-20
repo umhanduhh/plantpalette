@@ -18,6 +18,9 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "Plate Palette - Plant-Based Food Variety Tracker",
   description: "Track colorful, nutrient-dense foods each week. Celebrate variety and nutrition science.",
+  verification: {
+    google: "3iWxONHkl2Jxx94XFo9hsw8fKM6Lh4kQFqflJ5H8eyo",
+  },
 };
 
 export default function RootLayout({
