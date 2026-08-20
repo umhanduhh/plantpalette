@@ -114,18 +114,18 @@ export default function NewsfeedPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-lg font-poppins text-gray-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--canvas)' }}>
+        <div className="text-lg font-poppins" style={{ color: 'var(--body-text)' }}>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 py-8 font-[family-name:var(--font-poppins)]">
+    <div className="min-h-screen px-4 py-8 font-[family-name:var(--font-poppins)]" style={{ background: 'var(--canvas)' }}>
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <header className="mb-8 flex items-center justify-between">
-          <h1 className="text-4xl font-[family-name:var(--font-playfair)] font-bold" style={{ color: '#d4006f' }}>
+          <h1 className="text-4xl font-[family-name:var(--font-playfair)] font-bold" style={{ color: 'var(--ink)' }}>
             Community
           </h1>
           <a
@@ -138,10 +138,10 @@ export default function NewsfeedPage() {
         </header>
 
         {rows.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-2xl">
+          <div className="text-center py-12 rounded-2xl" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border-warm)' }}>
             <div className="text-5xl mb-4">🌱</div>
-            <p className="text-xl text-gray-500 mb-2">No activity yet this week</p>
-            <p className="text-gray-400">
+            <p className="text-xl mb-2" style={{ color: 'var(--body-text)' }}>No activity yet this week</p>
+            <p style={{ color: 'var(--muted)' }}>
               When people log foods, they&apos;ll show up here. Add your name in
               Settings to join in!
             </p>
@@ -156,21 +156,18 @@ export default function NewsfeedPage() {
               const isSelf = row.user_id === currentUserId;
 
               return (
-                <div
-                  key={row.user_id}
-                  className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-5 shadow-sm"
-                >
+                <div key={row.user_id} className="pp-card p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900">
+                      <h3 className="text-lg font-bold" style={{ color: 'var(--ink)' }}>
                         {row.display_name}
                         {isSelf && (
-                          <span className="ml-2 text-xs font-semibold text-gray-400">
+                          <span className="ml-2 text-xs font-semibold" style={{ color: 'var(--faint)' }}>
                             (you)
                           </span>
                         )}
                       </h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm" style={{ color: 'var(--muted)' }}>
                         {row.weekly_unique_count} / {row.weekly_goal} foods this week
                       </p>
                     </div>
@@ -179,13 +176,14 @@ export default function NewsfeedPage() {
                     <button
                       onClick={() => toggleRainbow(row)}
                       disabled={isSelf}
-                      className={`flex items-center gap-1 px-3 py-2 rounded-full transition-all ${
+                      className="flex items-center gap-1 px-3 py-2 rounded-full transition-all"
+                      style={
                         isSelf
-                          ? 'opacity-40 cursor-default'
+                          ? { opacity: 0.4, cursor: 'default', background: 'var(--surface-chip)' }
                           : row.viewer_has_rainbowed
-                          ? 'bg-pink-50 hover:bg-pink-100'
-                          : 'bg-gray-100 hover:bg-gray-200'
-                      }`}
+                          ? { background: 'rgba(212,0,111,0.08)' }
+                          : { background: 'var(--surface-chip)' }
+                      }
                       aria-label="Send a rainbow"
                       title={isSelf ? 'This is you' : 'Send a rainbow'}
                     >
@@ -197,7 +195,7 @@ export default function NewsfeedPage() {
                         {RAINBOW}
                       </span>
                       {row.rainbow_count > 0 && (
-                        <span className="text-sm font-semibold text-gray-600">
+                        <span className="text-sm font-semibold" style={{ color: 'var(--body-text)' }}>
                           {row.rainbow_count}
                         </span>
                       )}
@@ -205,7 +203,7 @@ export default function NewsfeedPage() {
                   </div>
 
                   {/* Progress bar */}
-                  <div className="relative w-full h-4 bg-gray-200 rounded-full overflow-hidden mb-3">
+                  <div className="relative w-full h-4 rounded-full overflow-hidden mb-3" style={{ background: 'var(--wheel-empty)' }}>
                     <div
                       className="h-full transition-all duration-500 ease-out rounded-full"
                       style={{
@@ -219,10 +217,7 @@ export default function NewsfeedPage() {
                   {row.recent_foods && row.recent_foods.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {row.recent_foods.map((food, i) => (
-                        <span
-                          key={`${row.user_id}-${i}`}
-                          className="text-xs font-medium px-3 py-1 rounded-full bg-white border border-gray-200 text-gray-700"
-                        >
+                        <span key={`${row.user_id}-${i}`} className="pp-chip" style={{ fontSize: 12, padding: '6px 12px' }}>
                           {food}
                         </span>
                       ))}

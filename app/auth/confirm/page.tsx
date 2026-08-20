@@ -45,10 +45,10 @@ export default function AuthConfirm() {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--canvas)' }}>
       <div className="text-center">
         <div className="text-6xl mb-4">⏳</div>
-        <p className="text-lg text-gray-600">Completing sign in...</p>
+        <p className="text-lg" style={{ color: 'var(--body-text)' }}>Completing sign in...</p>
       </div>
     </div>
   );

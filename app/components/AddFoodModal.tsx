@@ -184,7 +184,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+      <div className="rounded-3xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto" style={{ background: 'var(--surface)' }}>
         {/* Success Message */}
         {showSuccess && (
           <div className="text-center py-8">
@@ -192,7 +192,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
             <p className="text-2xl font-bold mb-2" style={{ color: '#52b788' }}>
               Success!
             </p>
-            <p className="text-lg text-gray-700">
+            <p className="text-lg" style={{ color: 'var(--body-text)' }}>
               {successMessage}
             </p>
           </div>
@@ -202,12 +202,13 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
         {!showSuccess && (
           <>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold" style={{ color: '#d4006f' }}>
+              <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold" style={{ color: 'var(--ink)' }}>
                 Add Foods
               </h2>
               <button
                 onClick={handleClose}
-                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                className="text-2xl leading-none"
+                style={{ color: 'var(--faint)' }}
               >
                 ×
               </button>
@@ -220,14 +221,14 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
                 placeholder="Search for foods..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-4 text-lg rounded-xl border-2 border-gray-200 focus:border-[#d4006f] focus:outline-none transition-colors"
+                className="pp-input text-lg"
                 autoFocus
               />
             </div>
 
             {/* Loading State */}
             {loading && (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8" style={{ color: 'var(--muted)' }}>
                 Searching...
               </div>
             )}
@@ -247,18 +248,21 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
                     <button
                       key={food.fdcId}
                       onClick={() => toggleFoodSelection(food)}
-                      className={`w-full text-left p-4 rounded-xl transition-all flex items-start gap-3 ${
+                      className="w-full text-left p-4 rounded-xl transition-all flex items-start gap-3 border-2"
+                      style={
                         selectedFoods.has(food.fdcId)
-                          ? 'bg-green-50 border-2 border-green-400'
-                          : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
-                      }`}
+                          ? { background: 'rgba(82,183,136,0.10)', borderColor: '#52b788' }
+                          : { background: 'var(--surface-soft)', borderColor: 'transparent' }
+                      }
                     >
                       <div className="flex-shrink-0 mt-1">
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                          selectedFoods.has(food.fdcId)
-                            ? 'bg-green-500 border-green-500'
-                            : 'border-gray-300'
-                        }`}>
+                        <div className="w-5 h-5 rounded border-2 flex items-center justify-center"
+                          style={
+                            selectedFoods.has(food.fdcId)
+                              ? { background: '#52b788', borderColor: '#52b788' }
+                              : { borderColor: 'var(--border-warm)' }
+                          }
+                        >
                           {selectedFoods.has(food.fdcId) && (
                             <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -267,7 +271,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
                         </div>
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-gray-900">{food.description}</p>
+                        <p className="font-semibold" style={{ color: 'var(--ink)' }}>{food.description}</p>
                       </div>
                     </button>
                   ))}
@@ -278,8 +282,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
                   <button
                     onClick={handleAddSelectedFoods}
                     disabled={addingFoods}
-                    className="w-full py-4 rounded-xl font-semibold text-white text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ background: 'linear-gradient(135deg, #52b788, #4cc9f0)' }}
+                    className="pp-btn-primary w-full text-lg"
                   >
                     {addingFoods
                       ? 'Adding...'
@@ -292,7 +295,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
 
             {/* Empty State */}
             {!loading && !error && searchQuery.length === 0 && (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-8" style={{ color: 'var(--faint)' }}>
                 Start typing to search for foods
               </div>
             )}

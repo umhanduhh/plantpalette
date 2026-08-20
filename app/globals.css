@@ -1,20 +1,59 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-
-  /* Plate Palette Brand Colors */
+  /* Plate Palette Brand Colors (the six hues of the color wheel) */
   --primary-magenta: #d4006f;
   --vibrant-orange: #ff6b35;
   --golden-yellow: #ffd966;
   --fresh-green: #52b788;
   --sky-blue: #4cc9f0;
+
+  /* Warm neutral surface scale (design system 1b / 2a) */
+  --canvas: #f5f1ea;        /* app page background */
+  --surface: #ffffff;       /* cards / sheets */
+  --surface-soft: #fafaf7;  /* inset preview panels */
+  --surface-chip: #f4f1ea;  /* pills, list rows */
+  --border-warm: #ece6da;   /* hairline borders */
+  --grabber: #e4e0d6;       /* bottom-sheet handle */
+  --wheel-empty: #f0ece3;   /* unfilled wheel segment */
+
+  /* Text */
+  --ink: #1a1a1a;           /* headings / primary */
+  --body-text: #6b6459;     /* body copy */
+  --muted: #9a9285;         /* secondary labels */
+  --faint: #a49c8e;         /* tertiary / captions */
+  --chip-text: #3f3b34;     /* text on chips */
+
+  /* Signature gradients */
+  --wheel-gradient: conic-gradient(
+    #d4006f 0deg 45deg,
+    #ff6b35 45deg 95deg,
+    #ffd966 95deg 150deg,
+    #52b788 150deg 225deg,
+    #4cc9f0 225deg 290deg,
+    #f0ece3 290deg 360deg
+  );
+  --grad-primary: linear-gradient(135deg, #4cc9f0, #52b788);
+  --grad-accent: linear-gradient(135deg, #d4006f, #ff6b35);
+
+  /* Radii */
+  --r-sheet: 28px;
+  --r-card: 20px;
+  --r-btn: 14px;
+  --r-row: 12px;
+  --r-pill: 20px;
+
+  /* Elevation */
+  --shadow-card: 0 12px 40px rgba(0, 0, 0, 0.12);
+
+  /* Back-compat aliases */
+  --background: var(--canvas);
+  --foreground: var(--ink);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--canvas);
+  --color-foreground: var(--ink);
   --font-sans: var(--font-poppins);
   --font-display: var(--font-playfair);
 
@@ -24,10 +63,126 @@
   --color-accent-yellow: var(--golden-yellow);
   --color-accent-green: var(--fresh-green);
   --color-accent-blue: var(--sky-blue);
+
+  /* Neutral utilities */
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-body: var(--body-text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-border-warm: var(--border-warm);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--canvas);
+  color: var(--ink);
   font-family: var(--font-poppins), sans-serif;
+}
+
+/* ---- Design-system component helpers ---- */
+
+.pp-display {
+  font-family: var(--font-playfair), serif;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Section eyebrow ("Tuesday, Aug 18") */
+.pp-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Group label ("Added today") */
+.pp-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.pp-card {
+  background: var(--surface);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* Food pill / chip */
+.pp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-chip);
+  border-radius: var(--r-pill);
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--chip-text);
+}
+
+.pp-chip-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Primary CTA — teal → green (design 1b / 2a) */
+.pp-btn-primary {
+  border: none;
+  border-radius: var(--r-btn);
+  padding: 16px;
+  font-family: var(--font-poppins), sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: #fff;
+  background: var(--grad-primary);
+  cursor: pointer;
+  transition: opacity 0.2s, box-shadow 0.2s;
+}
+.pp-btn-primary:hover:not(:disabled) {
+  box-shadow: 0 8px 24px rgba(76, 201, 240, 0.35);
+}
+.pp-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Text button */
+.pp-btn-text {
+  border: none;
+  background: none;
+  font-family: var(--font-poppins), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--faint);
+  cursor: pointer;
+}
+
+/* Warm text-field */
+.pp-input {
+  width: 100%;
+  border: 1px solid var(--border-warm);
+  border-radius: var(--r-btn);
+  background: var(--surface-soft);
+  padding: 14px 16px;
+  font-family: var(--font-poppins), sans-serif;
+  color: var(--ink);
+  transition: border-color 0.2s;
+}
+.pp-input:focus {
+  outline: none;
+  border-color: var(--primary-magenta);
+}
+
+/* Bottom-sheet grabber handle */
+.pp-grabber {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--grabber);
+  margin: 0 auto;
 }
