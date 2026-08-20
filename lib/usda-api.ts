@@ -22,23 +22,80 @@ const CATEGORY_PREFIXES_TO_STRIP = new Set(['spices', 'herbs', 'nuts', 'seeds'])
 // First-segment food names that are too generic to be the whole canonical
 // name — we expand them with the following segments so different varieties
 // get distinct entries (e.g. "Green Snap Beans" vs "Red Kidney Beans").
-const GENERIC_BASE_FOODS = new Set(['beans', 'peas', 'peppers', 'rice', 'squash']);
+// Being liberal here is safe: if USDA doesn't provide a variety modifier
+// for an entry, the canonical name falls back to just the base word.
+const GENERIC_BASE_FOODS = new Set([
+  // Legumes
+  'beans', 'peas', 'lentils', 'soybeans',
+  // Grains
+  'rice', 'wheat', 'oats', 'barley', 'corn', 'quinoa', 'millet',
+  'buckwheat', 'rye', 'sorghum', 'amaranth', 'flour',
+  // Leafy / cabbage family
+  'lettuce', 'cabbage', 'kale', 'spinach', 'cauliflower', 'broccoli',
+  'collards', 'chard', 'endive', 'watercress', 'arugula', 'greens',
+  // Alliums
+  'onions', 'garlic', 'leeks', 'chives', 'shallots', 'scallions',
+  // Nightshades
+  'peppers', 'tomatoes', 'potatoes', 'eggplant',
+  // Cucurbits
+  'squash', 'melons', 'cucumbers', 'pumpkin', 'gourds',
+  // Roots and tubers
+  'carrots', 'radishes', 'turnips', 'beets', 'parsnips', 'rutabagas',
+  'yams', 'cassava', 'jicama',
+  // Other vegetables
+  'mushrooms', 'asparagus', 'artichokes', 'celery', 'okra',
+  'sprouts', 'bamboo shoots', 'fennel',
+  // Fruits
+  'apples', 'pears', 'grapes', 'oranges', 'cherries', 'plums',
+  'peaches', 'apricots', 'nectarines', 'mangoes', 'kiwifruit',
+  'pineapples', 'bananas', 'figs', 'dates', 'persimmons',
+  'pomegranates', 'papayas', 'guavas', 'lychees', 'passion-fruit',
+  'lemons', 'limes', 'grapefruit', 'tangerines',
+  // Berries
+  'berries', 'strawberries', 'blueberries', 'raspberries',
+  'blackberries', 'cranberries', 'gooseberries', 'currants',
+  'elderberries', 'mulberries',
+  // Melons
+  'watermelon', 'cantaloupe', 'honeydew',
+]);
 
 // Segments that describe preparation or state, not the food itself. Skipped
 // when building canonical names for generic-base foods.
 const PREP_MODIFIERS = new Set([
+  // Cooking methods
   'raw', 'cooked', 'boiled', 'baked', 'steamed', 'roasted', 'fried',
-  'dried', 'frozen', 'canned', 'uncooked', 'unprepared', 'blanched',
-  'with salt', 'without salt', 'with skin', 'without skin',
-  'mature seeds', 'immature seeds',
-  'drained', 'drained solids', 'solids and liquids',
+  'grilled', 'sauteed', 'stewed', 'poached', 'microwaved', 'stir-fried',
+  'uncooked', 'unprepared', 'blanched', 'parboiled',
+  // Preservation
+  'dried', 'frozen', 'canned', 'fresh', 'dehydrated', 'freeze-dried',
+  // Salt / sodium
+  'with salt', 'without salt', 'unsalted', 'salted', 'lightly salted',
+  'low sodium', 'reduced sodium', 'sodium added', 'no salt added',
+  // Skin / peel
+  'with skin', 'without skin', 'skin on', 'skinless', 'peeled', 'unpeeled',
+  // Seeds / pit
+  'mature seeds', 'immature seeds', 'seeded', 'unseeded', 'pitted', 'unpitted',
+  // Liquid state
+  'drained', 'drained solids', 'solids and liquids', 'in tap water',
+  'in water', 'and rinsed', 'drained and rinsed', 'rinsed in tap water',
+  'vacuum pack', 'liquid', 'undrained',
+  // Sugar
+  'sweetened', 'unsweetened', 'with added sugar', 'no added sugar',
+  'lightly sweetened', 'sugar sweetened',
+  // Sulfur
   'sulfured', 'unsulfured',
-  'chopped', 'sliced', 'shredded', 'mashed', 'whole',
-  'low sodium', 'sodium added',
-  'in tap water', 'in water',
-  'and rinsed', 'drained and rinsed', 'rinsed in tap water',
-  'vacuum pack', 'regular',
-  'unenriched', 'enriched',
+  // Cut / shape
+  'chopped', 'sliced', 'shredded', 'mashed', 'whole', 'diced', 'cubed',
+  'grated', 'pureed', 'ground', 'cut', 'strips', 'pieces', 'chunks',
+  'wedges', 'halves', 'quarters',
+  // Enrichment
+  'unenriched', 'enriched', 'fortified', 'unfortified',
+  // Ripeness / age
+  'ripe', 'unripe', 'underripe', 'young', 'mature',
+  // Fat state
+  'reduced fat', 'low fat', 'nonfat', 'full fat', 'fat free',
+  // Grain milling (less relevant for produce but harmless)
+  'regular', 'instant', 'quick', 'old-fashioned',
 ]);
 
 function toCanonicalName(description: string): string {
