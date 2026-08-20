@@ -3,79 +3,44 @@ import { USDASearchResponse, USDAFood } from './types';
 const USDA_API_KEY = process.env.NEXT_PUBLIC_USDA_API_KEY!;
 const USDA_BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
 
-// Plant-based food categories from USDA
-const PLANT_BASED_CATEGORIES = [
+// Foundation + SR Legacy food categories that represent whole plant foods.
+// Everything else in these data types is a prepared/composite dish
+// (Baked Products, Baby Foods, Sweets, Fast Foods, etc.) and gets dropped.
+const ALLOWED_FOOD_CATEGORIES = new Set([
   'Fruits and Fruit Juices',
   'Vegetables and Vegetable Products',
   'Legumes and Legume Products',
   'Nut and Seed Products',
   'Cereal Grains and Pasta',
-  'Beverages',
-  'Baked Products',
   'Spices and Herbs',
-  'Breakfast Cereals',
-  'Soups, Sauces, and Gravies',
-  'Snacks',
-  'Sweets',
-  'Fats and Oils',
-  'Baby Foods'
-];
+]);
 
-// Keywords that indicate non-plant-based foods
-const NON_PLANT_KEYWORDS = [
-  // Meats
-  'beef', 'pork', 'chicken', 'turkey', 'lamb', 'veal', 'duck', 'goose',
-  'meat', 'bacon', 'sausage', 'ham', 'steak', 'ground beef', 'ground pork',
-  'pepperoni', 'salami', 'prosciutto', 'hot dog', 'bologna', 'pastrami',
-  'venison', 'bison', 'rabbit', 'pheasant', 'quail',
-  // Seafood
-  'fish', 'salmon', 'tuna', 'cod', 'shrimp', 'crab', 'lobster', 'seafood',
-  'tilapia', 'trout', 'halibut', 'mahi', 'sardine', 'anchovy', 'oyster',
-  'clam', 'mussel', 'scallop', 'squid', 'octopus', 'crawfish', 'prawn',
-  // Dairy
-  'milk', 'cheese', 'yogurt', 'butter', 'cream', 'whey', 'casein',
-  'ice cream', 'custard', 'pudding', 'cottage cheese', 'ricotta', 'mozzarella',
-  'cheddar', 'parmesan', 'gouda', 'brie', 'feta', 'cream cheese',
-  // Eggs and other
-  'egg', 'eggs', 'gelatin', 'lard', 'tallow', 'suet', 'bone broth',
-  'chicken broth', 'beef broth', 'fish sauce', 'worcestershire'
-];
+// SR Legacy names some entries as "<Category>, <food>, <prep>"
+// (e.g. "Spices, turmeric, ground"). For these, the food name is segment 2.
+const CATEGORY_PREFIXES_TO_STRIP = new Set(['spices', 'herbs', 'nuts', 'seeds']);
 
-function isLikelyPlantBased(food: USDAFood): boolean {
-  const description = food.description.toLowerCase();
+function toCanonicalName(description: string): string {
+  // "Chickpeas (garbanzo beans, bengal gram), mature seeds, raw" → "Chickpeas, mature seeds, raw"
+  const withoutParens = description.replace(/\s*\([^)]*\)/g, '').trim();
+  const segments = withoutParens.split(',').map(s => s.trim()).filter(Boolean);
+  if (segments.length === 0) return description;
 
-  // First check if food is in a plant-based category
-  const category = (food as any).foodCategory;
-  if (category && !PLANT_BASED_CATEGORIES.includes(category)) {
-    return false;
+  let name = segments[0];
+  if (CATEGORY_PREFIXES_TO_STRIP.has(name.toLowerCase()) && segments.length >= 2) {
+    name = segments[1];
   }
 
-  // Then check if food contains non-plant keywords
-  const containsNonPlant = NON_PLANT_KEYWORDS.some(keyword =>
-    description.includes(keyword)
-  );
-
-  if (containsNonPlant) return false;
-
-  return true;
-}
-
-function cleanFoodName(description: string): string {
-  // Remove "Foundation" and common suffixes
-  let cleaned = description
-    .replace(/,?\s*Foundation$/i, '')
-    .replace(/,?\s*SR Legacy$/i, '')
-    .replace(/,?\s*Survey \(FNDDS\)$/i, '')
-    .trim();
-
-  return cleaned;
+  return name.replace(/\b\w/g, c => c.toUpperCase());
 }
 
 export async function searchFoods(query: string, pageSize: number = 50): Promise<USDASearchResponse> {
   try {
-    // Request more results to account for filtering
     const response = await fetch(
-      `${USDA_BASE_URL}/foods/search?query=${encodeURIComponent(query)}&pageSize=${pageSize * 2}&api_key=${USDA_API_KEY}`
+      `${USDA_BASE_URL}/foods/search` +
+      `?query=${encodeURIComponent(query)}` +
+      `&dataType=Foundation,SR%20Legacy` +
+      `&pageSize=${pageSize}` +
+      `&api_key=${USDA_API_KEY}`
     );
 
     if (!response.ok) {
@@ -84,15 +49,23 @@ export async function searchFoods(query: string, pageSize: number = 50): Promise
 
     const data = await response.json();
 
-    // Filter out non-plant-based foods, clean names, and limit to 15 results
     if (data.foods) {
-      data.foods = data.foods
-        .filter(isLikelyPlantBased)
-        .map((food: USDAFood) => ({
-          ...food,
-          description: cleanFoodName(food.description)
-        }))
-        .slice(0, 15);
+      // Filter to allowed plant-food categories, then dedupe by canonical
+      // name (prefer Foundation over SR Legacy). Map.set on an existing key
+      // preserves insertion order, so USDA's relevance ranking is retained.
+      const seen = new Map<string, USDAFood>();
+      for (const food of data.foods as USDAFood[]) {
+        const category = (food as { foodCategory?: string }).foodCategory;
+        if (!category || !ALLOWED_FOOD_CATEGORIES.has(category)) continue;
+
+        const canonical = toCanonicalName(food.description);
+        const key = canonical.toLowerCase();
+        const existing = seen.get(key);
+        if (!existing || (existing.dataType !== 'Foundation' && food.dataType === 'Foundation')) {
+          seen.set(key, { ...food, description: canonical });
+        }
+      }
+      data.foods = Array.from(seen.values()).slice(0, 15);
     }
 
     return data;
