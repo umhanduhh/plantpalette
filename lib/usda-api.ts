@@ -96,7 +96,47 @@ const PREP_MODIFIERS = new Set([
   'reduced fat', 'low fat', 'nonfat', 'full fat', 'fat free',
   // Grain milling (less relevant for produce but harmless)
   'regular', 'instant', 'quick', 'old-fashioned',
+  // Dryness
+  'dry',
 ]);
+
+// Words that mark an entry as containing animal products. Any of these
+// appearing as a whole word in the description filters the entry out.
+// Word-boundary matching means "eggplant" survives the "egg" check.
+const ANIMAL_PRODUCT_WORDS = new Set([
+  // Meat
+  'beef', 'pork', 'chicken', 'turkey', 'lamb', 'veal', 'duck', 'goose',
+  'bison', 'venison', 'rabbit', 'ham', 'bacon', 'sausage', 'steak',
+  'franks', 'frankfurter', 'frankfurters', 'pepperoni', 'salami',
+  'prosciutto', 'bologna', 'pastrami', 'meatball', 'meatballs',
+  'meat', 'meats', 'poultry', 'gelatin', 'lard', 'tallow', 'suet',
+  // Seafood
+  'fish', 'salmon', 'tuna', 'cod', 'shrimp', 'crab', 'lobster',
+  'tilapia', 'trout', 'halibut', 'sardine', 'sardines', 'anchovy',
+  'anchovies', 'oyster', 'oysters', 'clam', 'clams', 'mussel',
+  'mussels', 'scallop', 'scallops', 'squid', 'octopus', 'prawn',
+  'prawns', 'crawfish', 'crayfish', 'seafood',
+  // Eggs and unambiguous dairy
+  'egg', 'eggs', 'whey', 'casein', 'ghee', 'yogurt', 'kefir',
+]);
+
+// Description-level fragments that mark an entry as a cooking byproduct or
+// non-food derivative rather than the food itself. Substring match on the
+// lowercased description.
+const REJECT_DESCRIPTION_FRAGMENTS = [
+  'liquid from', 'cooking liquid', 'juice from', 'juice of',
+  'drained solids of', 'drained liquids',
+];
+
+function containsAnimalProduct(description: string): boolean {
+  const words = description.toLowerCase().match(/\b[a-z]+\b/g) || [];
+  return words.some(w => ANIMAL_PRODUCT_WORDS.has(w));
+}
+
+function isCookingByproduct(description: string): boolean {
+  const lower = description.toLowerCase();
+  return REJECT_DESCRIPTION_FRAGMENTS.some(f => lower.includes(f));
+}
 
 function toCanonicalName(description: string): string {
   // "Chickpeas (garbanzo beans, bengal gram), mature seeds, raw" → "Chickpeas, mature seeds, raw"
@@ -111,9 +151,13 @@ function toCanonicalName(description: string): string {
     name = segments[1];
   } else if (GENERIC_BASE_FOODS.has(firstLower)) {
     // USDA orders modifiers broad-to-specific ("Beans, snap, green"), so we
-    // reverse them for a natural adjective order ("Green Snap Beans").
+    // reverse them for a natural adjective order ("Green Snap Beans"). Strip
+    // any occurrence of the base word from modifiers so we don't emit
+    // "... Beans Beans" when USDA repeats it (e.g. "liquid from stewed beans").
+    const baseRegex = new RegExp(`\\b${firstLower}\\b`, 'gi');
     const modifiers = segments.slice(1)
-      .filter(s => !PREP_MODIFIERS.has(s.toLowerCase()))
+      .map(s => s.replace(baseRegex, '').replace(/\s+/g, ' ').trim())
+      .filter(s => s && !PREP_MODIFIERS.has(s.toLowerCase()))
       .reverse();
     if (modifiers.length > 0) {
       name = modifiers.join(' ') + ' ' + name;
@@ -163,6 +207,8 @@ export async function searchFoods(query: string, pageSize: number = 50): Promise
         const category = (food as { foodCategory?: string }).foodCategory;
         if (!category || !ALLOWED_FOOD_CATEGORIES.has(category)) continue;
 
+        if (containsAnimalProduct(food.description)) continue;
+        if (isCookingByproduct(food.description)) continue;
         if (!matchesQueryPrefix(food.description, query)) continue;
         const canonical = toCanonicalName(food.description);
         const key = canonical.toLowerCase();
