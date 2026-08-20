@@ -9,10 +9,14 @@ export default function Settings() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [weeklyGoal, setWeeklyGoal] = useState(20);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  const nameIncomplete = !firstName.trim() || !lastName.trim();
 
   useEffect(() => {
     loadUser();
@@ -36,6 +40,7 @@ export default function Settings() {
       if (userData) {
         setUser(userData);
         setFirstName(userData.first_name || '');
+        setLastName(userData.last_name || '');
         setWeeklyGoal(userData.weekly_goal);
       }
     } catch (error) {
@@ -64,6 +69,7 @@ export default function Settings() {
         .from('users')
         .update({
           first_name: firstName.trim() || null,
+          last_name: lastName.trim() || null,
           weekly_goal: weeklyGoal,
           updated_at: new Date().toISOString()
         })
@@ -75,7 +81,12 @@ export default function Settings() {
 
       // Update local state
       if (user) {
-        setUser({ ...user, first_name: firstName.trim() || undefined, weekly_goal: weeklyGoal });
+        setUser({
+          ...user,
+          first_name: firstName.trim() || undefined,
+          last_name: lastName.trim() || undefined,
+          weekly_goal: weeklyGoal,
+        });
       }
 
       // Clear message after 3 seconds
@@ -123,6 +134,27 @@ export default function Settings() {
           </h1>
         </div>
 
+        {/* Real-name encouragement banner */}
+        {nameIncomplete && !bannerDismissed && (
+          <div className="mb-8 p-4 rounded-2xl flex items-start justify-between gap-4 bg-gradient-to-br from-pink-50 to-orange-50">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">🌈</span>
+              <p className="text-sm text-gray-700">
+                Add your <span className="font-semibold">real first and last name</span> to show up
+                in the community newsfeed and cheer on other eaters. You&apos;ll appear as{' '}
+                <span className="font-semibold">First L.</span> — never your full last name or email.
+              </p>
+            </div>
+            <button
+              onClick={() => setBannerDismissed(true)}
+              className="text-gray-400 hover:text-gray-600 text-xl leading-none flex-shrink-0"
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         {/* Profile Settings */}
         <div className="mb-8 p-6 bg-gray-50 rounded-2xl">
           <h2 className="text-xl font-[family-name:var(--font-playfair)] font-bold mb-4" style={{ color: '#d4006f' }}>
@@ -130,22 +162,42 @@ export default function Settings() {
           </h2>
           <form onSubmit={handleSaveProfile}>
             <div className="space-y-4 mb-6">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 mb-2">
-                  First Name
-                </label>
-                <input
-                  id="firstName"
-                  type="text"
-                  placeholder="Your first name"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#d4006f] focus:outline-none transition-colors"
-                />
-                <p className="text-sm text-gray-500 mt-2">
-                  This is how your friends will see you
-                </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 mb-2">
+                    First Name
+                  </label>
+                  <input
+                    id="firstName"
+                    type="text"
+                    placeholder="Your first name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#d4006f] focus:outline-none transition-colors"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Last Name
+                  </label>
+                  <input
+                    id="lastName"
+                    type="text"
+                    placeholder="Your last name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#d4006f] focus:outline-none transition-colors"
+                  />
+                </div>
               </div>
+              <p className="text-sm text-gray-500 -mt-2">
+                Your name appears in the community newsfeed as{' '}
+                <span className="font-semibold">
+                  {firstName.trim() ? firstName.trim() : 'First'}{' '}
+                  {lastName.trim() ? lastName.trim().charAt(0).toUpperCase() + '.' : 'L.'}
+                </span>
+                {' '}— use your real name so friends can recognize you.
+              </p>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
