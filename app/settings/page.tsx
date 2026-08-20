@@ -268,6 +268,13 @@ export default function Settings() {
         >
           Sign Out
         </button>
+
+        {/* Legal links — intentionally subtle */}
+        <div className="mt-10 flex items-center justify-center gap-3 text-[10px]" style={{ color: 'var(--faint)', opacity: 0.5 }}>
+          <a href="/privacy" className="hover:underline">Privacy Policy</a>
+          <span>·</span>
+          <a href="/terms" className="hover:underline">Terms of Service</a>
+        </div>
       </div>
     </div>
   );
