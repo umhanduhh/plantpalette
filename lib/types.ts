@@ -3,6 +3,7 @@ export interface User {
   email: string;
   username?: string;
   first_name?: string;
+  last_name?: string;
   weekly_goal: number;
   created_at: string;
   updated_at: string;
@@ -41,16 +42,6 @@ export interface ShareLog {
   created_at: string;
 }
 
-export interface Friendship {
-  id: string;
-  user_id: string;
-  friend_id: string;
-  status: 'pending' | 'accepted' | 'rejected';
-  requested_at: string;
-  responded_at?: string;
-  created_at: string;
-}
-
 export interface WeeklyReaction {
   id: string;
   from_user_id: string;
@@ -58,28 +49,6 @@ export interface WeeklyReaction {
   week_starting_date: string;
   emoji: string;
   created_at: string;
-}
-
-export interface FriendWithProgress {
-  id: string;
-  email: string;
-  username?: string;
-  first_name?: string;
-  weekly_goal: number;
-  foods_count: number;
-  reaction?: WeeklyReaction;
-}
-
-export interface EdamamFoodResult {
-  food: {
-    uri: string;
-    label: string;
-    knownAs?: string;
-    category?: string;
-    categoryLabel?: string;
-    image?: string;
-    nutrients?: Record<string, any>;
-  };
 }
 
 // USDA FoodData Central API Types
