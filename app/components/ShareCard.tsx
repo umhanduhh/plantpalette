@@ -4,6 +4,8 @@ import { useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { FoodLog, User } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
+import { getPlantColorInfo, PLANT_COLOR_HEX_RAW } from '@/lib/plant-colors';
+import LogoMark from './LogoMark';
 
 interface ShareCardProps {
   user: User;
@@ -12,16 +14,6 @@ interface ShareCardProps {
   weekStartDate: string;
   weekEndDate: string;
 }
-
-const funFacts = [
-  "I'm eating the rainbow! 🌈",
-  "Building a diverse diet, one food at a time",
-  "Variety is the spice of life",
-  "Every color = different nutrients",
-  "Celebrating food diversity this week",
-  "Adding more variety to my plate",
-  "Exploring colorful nutrition",
-];
 
 // The six color-wheel segments (matches the conic-gradient used everywhere).
 const WHEEL_SEGMENTS = [
@@ -46,9 +38,10 @@ function arcPath(cx: number, cy: number, r: number, start: number, end: number):
 
 /**
  * SVG color wheel — an SVG ring (so html2canvas can rasterize it; it cannot
- * render CSS conic-gradient) with an HTML white center holding count + label.
+ * render CSS conic-gradient) with a white center holding a three-tier
+ * hierarchy: big count, "plant colors", small "this week".
  */
-function WheelSvg({ size, ring, count, label }: { size: number; ring: number; count: number | string; label: string }) {
+function WheelSvg({ size, ring, count }: { size: number; ring: number; count: number | string }) {
   const r = size / 2;
   return (
     <div style={{ position: 'relative', width: size, height: size }}>
@@ -69,12 +62,27 @@ function WheelSvg({ size, ring, count, label }: { size: number; ring: number; co
           justifyContent: 'center',
         }}
       >
-        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: size * 0.24, fontWeight: 700, color: '#1a1a1a', lineHeight: 1 }}>
+        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: size * 0.27, fontWeight: 700, color: '#1a1a1a', lineHeight: 1 }}>
           {count}
         </div>
-        <div style={{ fontSize: Math.max(11, size * 0.065), color: '#9a9285', marginTop: 4 }}>{label}</div>
+        <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: size * 0.08, fontWeight: 600, color: '#1a1a1a', marginTop: size * 0.03 }}>
+          plant colors
+        </div>
+        <div style={{ fontFamily: 'Poppins, sans-serif', fontSize: size * 0.055, fontWeight: 600, color: '#d4006f', marginTop: size * 0.012, letterSpacing: '0.01em' }}>
+          this week
+        </div>
       </div>
     </div>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3v12" />
+      <path d="M8 7l4-4 4 4" />
+      <path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+    </svg>
   );
 }
 
@@ -84,14 +92,13 @@ export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartD
   const cardRef = useRef<HTMLDivElement>(null);
 
   const weeklyGoal = user.weekly_goal;
-  const progressPercent = Math.min((uniqueFoodsCount / weeklyGoal) * 100, 100);
   const goalMet = uniqueFoodsCount >= weeklyGoal;
+  const headline = goalMet ? 'Goal crushed! 🎉' : 'A colorful week!';
 
-  // Get unique food names
+  // Get unique food names, most compact scannable form.
   const uniqueFoodNames = Array.from(new Set(foodLogs.map(log => log.food_name)));
-
-  // Random fun fact
-  const funFact = funFacts[Math.floor(Math.random() * funFacts.length)];
+  const namesToShow = uniqueFoodNames.slice(0, 5);
+  const remainingCount = uniqueFoodNames.length - namesToShow.length;
 
   async function handleGenerateAndShare() {
     if (!cardRef.current) return;
@@ -187,83 +194,96 @@ export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartD
         📱 Share This Week
       </button>
 
-      {/* Share Modal (design 2a bottom sheet) */}
+      {/* Share Modal */}
       {showShareModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" style={{ background: 'var(--surface)', borderRadius: 'var(--r-sheet)' }}>
             <div className="pp-grabber mb-4" />
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold" style={{ color: 'var(--ink)' }}>
-                Share Your Week
-              </h2>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="pp-display text-3xl">Share your week</h2>
               <button
                 onClick={() => setShowShareModal(false)}
-                className="text-2xl leading-none"
-                style={{ color: 'var(--faint)' }}
+                className="pp-icon-btn pp-icon-btn--soft"
+                aria-label="Close"
               >
                 ×
               </button>
             </div>
 
-            {/* Preview Card (design 2a) — this exact element is exported */}
+            {/* Preview Card — this exact element is exported as the shared image */}
             <div
               ref={cardRef}
               style={{
                 background: '#fafaf7',
                 border: '1px solid #ece6da',
                 borderRadius: '20px',
-                padding: '32px 24px',
-                marginBottom: '24px',
+                padding: '28px 22px 22px',
+                marginBottom: '20px',
                 fontFamily: 'Poppins, sans-serif',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: '18px',
+                gap: '16px',
                 textAlign: 'center',
               }}
             >
-              <WheelSvg size={180} ring={28} count={uniqueFoodsCount} label={`/ ${weeklyGoal} foods`} />
+              <WheelSvg size={224} ring={32} count={uniqueFoodsCount} />
 
-              <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '22px', fontWeight: 700, color: '#1a1a1a', margin: 0, lineHeight: 1.2 }}>
-                Unique Foods This Week
-              </h1>
+              <p style={{ fontFamily: 'Playfair Display, serif', fontSize: '22px', fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
+                {headline}
+              </p>
 
-              {/* Progress bar */}
-              <div style={{ width: '100%', height: '10px', background: '#f0ece3', borderRadius: '5px', overflow: 'hidden' }}>
-                <div style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #4cc9f0, #52b788)', borderRadius: '5px' }} />
-              </div>
-
-              {/* Fun fact / status */}
-              {goalMet ? (
-                <div style={{ background: 'rgba(82, 183, 136, 0.12)', borderRadius: '16px', padding: '14px 18px' }}>
-                  <p style={{ fontSize: '15px', color: '#52b788', fontWeight: 700, margin: '0 0 4px' }}>Goal Crushed! 🎉</p>
-                  <p style={{ fontSize: '13px', color: '#6b6459', margin: 0 }}>{funFact}</p>
+              {/* Compact, scannable food summary — each food carries its own color cue */}
+              {namesToShow.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', columnGap: '16px', rowGap: '8px', maxWidth: '320px' }}>
+                  {namesToShow.map((name) => {
+                    const info = getPlantColorInfo(name);
+                    const hex = info?.color ? PLANT_COLOR_HEX_RAW[info.color] : '#c9c2b4';
+                    return (
+                      <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ width: 9, height: 9, borderRadius: '50%', background: hex, display: 'inline-block', flexShrink: 0 }} />
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#3f3b34' }}>{name}</span>
+                      </span>
+                    );
+                  })}
+                  {remainingCount > 0 && (
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#9a9285' }}>+ {remainingCount} more</span>
+                  )}
                 </div>
-              ) : (
-                <p style={{ fontSize: '14px', color: '#6b6459', lineHeight: 1.6, margin: 0, maxWidth: '260px' }}>{funFact}</p>
               )}
 
-              {/* Branding */}
-              <div style={{ marginTop: '4px' }}>
-                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '16px', fontWeight: 700, color: '#d4006f' }}>
+              <div style={{ width: '100%', borderTop: '1px dashed #ece6da' }} />
+
+              {/* Signature wordmark */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <LogoMark size={22} />
+                <span style={{ fontFamily: 'Playfair Display, serif', fontSize: '17px', fontWeight: 700, color: '#1a1a1a' }}>
                   Plate Palette
-                </div>
-                <p style={{ fontSize: '11px', color: '#9a9285', margin: '4px 0 0' }}>Track your food variety</p>
+                </span>
               </div>
             </div>
 
-            {/* Generate Button */}
+            {/* CTA — reserved multicolor treatment for this celebratory action */}
             <button
               onClick={handleGenerateAndShare}
               disabled={isGenerating}
-              className="pp-btn-primary w-full text-lg"
+              className="pp-btn-celebrate w-full text-lg"
             >
-              {isGenerating ? 'Generating...' : 'Share Now'}
+              {!isGenerating && <ShareIcon />}
+              {isGenerating ? 'Generating...' : 'Share now'}
             </button>
 
-            <p className="text-sm text-center mt-4" style={{ color: 'var(--faint)' }}>
-              Generate and share your colorful week on social media
+            <p className="text-xs text-center mt-3 mb-3" style={{ color: 'var(--faint)' }}>
+              Shares as an image you can post or send.
             </p>
+
+            {/* Secondary action — visibly quiet */}
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="pp-btn-secondary w-full"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}

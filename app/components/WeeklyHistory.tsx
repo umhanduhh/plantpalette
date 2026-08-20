@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { FoodLog, formatLocalDate } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import NutritionInfoCard from './NutritionInfoCard';
+import { getPlantColorInfo, PLANT_COLOR_HEX } from '@/lib/plant-colors';
 
 interface WeeklyHistoryProps {
   foodLogs: FoodLog[];
@@ -103,19 +104,29 @@ export default function WeeklyHistory({ foodLogs, weekStartDate, weekEndDate, on
 
               {/* Foods List */}
               <div className="space-y-2">
-                {logs.map((log) => (
+                {logs.map((log) => {
+                  const info = getPlantColorInfo(log.food_name);
+                  const dotColor = info?.color ? PLANT_COLOR_HEX[info.color] : null;
+                  return (
                   <div key={log.id} className="rounded-lg p-3 flex items-center justify-between gap-3" style={{ background: 'var(--surface)' }}>
                     <button
                       onClick={() => setSelectedFood(log)}
-                      className="flex-1 text-left hover:opacity-70 transition-opacity"
+                      className="flex-1 text-left hover:opacity-70 transition-opacity flex items-center gap-2.5"
                     >
-                      <p className="font-medium" style={{ color: 'var(--ink)' }}>{log.food_name}</p>
-                      <p className="text-xs mt-1" style={{ color: 'var(--faint)' }}>
-                        {new Date(log.logged_at).toLocaleTimeString('en-US', {
-                          hour: 'numeric',
-                          minute: '2-digit'
-                        })}
-                      </p>
+                      <span
+                        className="pp-dot flex-shrink-0"
+                        style={{ width: 9, height: 9, background: dotColor || 'var(--border-warm)' }}
+                        aria-hidden="true"
+                      />
+                      <span>
+                        <p className="font-medium" style={{ color: 'var(--ink)' }}>{log.food_name}</p>
+                        <p className="text-xs mt-1" style={{ color: 'var(--faint)' }}>
+                          {new Date(log.logged_at).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </span>
                     </button>
 
                     {/* Delete X Button - Always Visible */}
@@ -159,7 +170,8 @@ export default function WeeklyHistory({ foodLogs, weekStartDate, weekEndDate, on
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
