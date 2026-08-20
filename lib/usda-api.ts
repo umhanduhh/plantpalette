@@ -33,6 +33,16 @@ function toCanonicalName(description: string): string {
   return name.replace(/\b\w/g, c => c.toUpperCase());
 }
 
+// True when the query matches the start of any whitespace-separated word in
+// the canonical name (case-insensitive). Hyphens are NOT word boundaries, so
+// "apple" matches "Apples" and "Green Apples" but not "Rose-Apples".
+function matchesQueryPrefix(canonical: string, query: string): boolean {
+  const q = query.toLowerCase().trim();
+  if (!q) return true;
+  const c = canonical.toLowerCase();
+  return c.startsWith(q) || c.includes(' ' + q);
+}
+
 export async function searchFoods(query: string, pageSize: number = 50): Promise<USDASearchResponse> {
   try {
     const response = await fetch(
@@ -59,6 +69,7 @@ export async function searchFoods(query: string, pageSize: number = 50): Promise
         if (!category || !ALLOWED_FOOD_CATEGORIES.has(category)) continue;
 
         const canonical = toCanonicalName(food.description);
+        if (!matchesQueryPrefix(canonical, query)) continue;
         const key = canonical.toLowerCase();
         const existing = seen.get(key);
         if (!existing || (existing.dataType !== 'Foundation' && food.dataType === 'Foundation')) {

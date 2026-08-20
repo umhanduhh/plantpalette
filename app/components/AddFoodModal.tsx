@@ -268,7 +268,6 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
                       </div>
                       <div className="flex-1">
                         <p className="font-semibold text-gray-900">{food.description}</p>
-                        <p className="text-sm text-gray-500 mt-1">{food.dataType}</p>
                       </div>
                     </button>
                   ))}
