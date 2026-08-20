@@ -4,11 +4,134 @@ import { useState, useEffect, useRef } from 'react';
 import { searchFoods } from '@/lib/usda-api';
 import { USDAFood, formatLocalDate } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
+import { getPlantColorInfo, PLANT_COLOR_HEX } from '@/lib/plant-colors';
 
 interface AddFoodModalProps {
   isOpen: boolean;
   onClose: () => void;
   onFoodAdded: () => void;
+}
+
+// Picks the most generic / canonical-feeling result to lead with as the
+// "Best match" — the fewest-word name among the top few relevance-ranked
+// results (e.g. "Apples" over "Honeycrisp Apples"). Everything else is
+// still shown, just grouped under "Other matches" instead of hidden.
+function pickBestMatch(foods: USDAFood[]): { best: USDAFood | null; rest: USDAFood[] } {
+  if (foods.length === 0) return { best: null, rest: [] };
+  const searchWindow = Math.min(foods.length, 8);
+  let bestIndex = 0;
+  let bestWordCount = foods[0].description.split(/\s+/).length;
+  for (let i = 1; i < searchWindow; i++) {
+    const wordCount = foods[i].description.split(/\s+/).length;
+    if (wordCount < bestWordCount) {
+      bestWordCount = wordCount;
+      bestIndex = i;
+    }
+  }
+  const best = foods[bestIndex];
+  const rest = foods.filter((_, i) => i !== bestIndex);
+  return { best, rest };
+}
+
+function SearchIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+function ClearIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
+function FoodRow({
+  food,
+  selected,
+  featured = false,
+  onToggle,
+}: {
+  food: USDAFood;
+  selected: boolean;
+  featured?: boolean;
+  onToggle: () => void;
+}) {
+  const info = getPlantColorInfo(food.description);
+  const dotColor = info?.color ? PLANT_COLOR_HEX[info.color] : null;
+  const metaText = info
+    ? [info.colorLabel, info.category].filter(Boolean).join(' · ')
+    : null;
+
+  return (
+    <div className={`pp-row ${featured ? 'pp-row--best' : ''}`} role="listitem">
+      <div
+        className="pp-row-icon"
+        style={{
+          background: dotColor ? `color-mix(in srgb, ${dotColor} 16%, white)` : 'var(--surface-chip)',
+        }}
+        aria-hidden="true"
+      >
+        <span
+          className="pp-dot"
+          style={{
+            width: featured ? 16 : 12,
+            height: featured ? 16 : 12,
+            background: dotColor || 'var(--muted)',
+            opacity: dotColor ? 1 : 0.5,
+          }}
+        />
+      </div>
+
+      <button
+        type="button"
+        onClick={onToggle}
+        className="pp-row-body text-left"
+        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+      >
+        <p className="pp-row-name">{food.description}</p>
+        {metaText && (
+          <p className="pp-row-meta">
+            {info?.colorLabel && <span className="pp-dot" style={{ background: dotColor || undefined, width: 6, height: 6 }} />}
+            {metaText}
+          </p>
+        )}
+      </button>
+
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`pp-add-btn ${selected ? 'pp-add-btn--added' : ''}`}
+        aria-pressed={selected}
+        aria-label={selected ? `Remove ${food.description}` : `Add ${food.description}`}
+      >
+        {selected ? <CheckIcon /> : <PlusIcon />}
+        {selected ? 'Added' : 'Add'}
+      </button>
+    </div>
+  );
 }
 
 export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodModalProps) {
@@ -21,6 +144,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (searchQuery.length >= 2) {
@@ -180,17 +304,26 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
     onClose();
   }
 
+  function handleClearSearch() {
+    setSearchQuery('');
+    setSearchResults([]);
+    setError('');
+    inputRef.current?.focus();
+  }
+
   if (!isOpen) return null;
+
+  const { best, rest } = pickBestMatch(searchResults);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="rounded-3xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto" style={{ background: 'var(--surface)' }}>
+      <div className="p-6 max-w-md w-full max-h-[85vh] overflow-y-auto flex flex-col" style={{ background: 'var(--surface)', borderRadius: 'var(--r-sheet)' }}>
         {/* Success Message */}
         {showSuccess && (
           <div className="text-center py-8">
             <div className="text-6xl mb-4">🌱</div>
-            <p className="text-2xl font-bold mb-2" style={{ color: '#52b788' }}>
-              Success!
+            <p className="text-2xl font-bold mb-2 font-[family-name:var(--font-playfair)]" style={{ color: 'var(--fresh-green)' }}>
+              Nice!
             </p>
             <p className="text-lg" style={{ color: 'var(--body-text)' }}>
               {successMessage}
@@ -201,103 +334,110 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
         {/* Search Interface */}
         {!showSuccess && (
           <>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold" style={{ color: 'var(--ink)' }}>
-                Add Foods
-              </h2>
+            <div className="pp-sheet-header">
+              <h2 className="pp-sheet-title">Add foods</h2>
               <button
                 onClick={handleClose}
-                className="text-2xl leading-none"
-                style={{ color: 'var(--faint)' }}
+                className="pp-icon-btn"
+                aria-label="Close"
               >
                 ×
               </button>
             </div>
 
             {/* Search Input */}
-            <div className="mb-4">
+            <div className="pp-search-wrap mb-1">
+              <span className="pp-search-icon">
+                <SearchIcon />
+              </span>
               <input
+                ref={inputRef}
                 type="text"
-                placeholder="Search for foods..."
+                placeholder="Search for a food, like apple"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pp-input text-lg"
+                className="pp-search-input"
+                aria-label="Search for foods"
                 autoFocus
               />
+              {searchQuery.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="pp-search-clear"
+                  aria-label="Clear search"
+                >
+                  <ClearIcon />
+                </button>
+              )}
             </div>
 
-            {/* Loading State */}
-            {loading && (
-              <div className="text-center py-8" style={{ color: 'var(--muted)' }}>
-                Searching...
-              </div>
-            )}
+            <div className="flex-1 overflow-y-auto -mx-1 px-1 mt-3">
+              {/* Loading State */}
+              {loading && (
+                <div className="pp-state-copy">Searching&hellip;</div>
+              )}
 
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-50 text-red-700 p-4 rounded-xl mb-4">
-                {error}
-              </div>
-            )}
+              {/* Error / no-results Message */}
+              {!loading && error && (
+                <div className="pp-state-copy">{error}</div>
+              )}
 
-            {/* Search Results with Checkboxes */}
-            {!loading && searchResults.length > 0 && (
-              <>
-                <div className="space-y-2 max-h-96 overflow-y-auto mb-4">
-                  {searchResults.map((food) => (
-                    <button
-                      key={food.fdcId}
-                      onClick={() => toggleFoodSelection(food)}
-                      className="w-full text-left p-4 rounded-xl transition-all flex items-start gap-3 border-2"
-                      style={
-                        selectedFoods.has(food.fdcId)
-                          ? { background: 'rgba(82,183,136,0.10)', borderColor: '#52b788' }
-                          : { background: 'var(--surface-soft)', borderColor: 'transparent' }
-                      }
-                    >
-                      <div className="flex-shrink-0 mt-1">
-                        <div className="w-5 h-5 rounded border-2 flex items-center justify-center"
-                          style={
-                            selectedFoods.has(food.fdcId)
-                              ? { background: '#52b788', borderColor: '#52b788' }
-                              : { borderColor: 'var(--border-warm)' }
-                          }
-                        >
-                          {selectedFoods.has(food.fdcId) && (
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </div>
+              {/* Results — Best match + Other matches */}
+              {!loading && !error && searchResults.length > 0 && (
+                <div className="mb-2">
+                  {best && (
+                    <div className="mb-4">
+                      <p className="pp-section-label mb-2">Best match</p>
+                      <div role="list">
+                        <FoodRow
+                          food={best}
+                          selected={selectedFoods.has(best.fdcId)}
+                          featured
+                          onToggle={() => toggleFoodSelection(best)}
+                        />
                       </div>
-                      <div className="flex-1">
-                        <p className="font-semibold" style={{ color: 'var(--ink)' }}>{food.description}</p>
+                    </div>
+                  )}
+
+                  {rest.length > 0 && (
+                    <div>
+                      <p className="pp-section-label mb-1">Other matches</p>
+                      <div role="list">
+                        {rest.map((food) => (
+                          <FoodRow
+                            key={food.fdcId}
+                            food={food}
+                            selected={selectedFoods.has(food.fdcId)}
+                            onToggle={() => toggleFoodSelection(food)}
+                          />
+                        ))}
                       </div>
-                    </button>
-                  ))}
+                    </div>
+                  )}
                 </div>
+              )}
 
-                {/* Add Selected Button */}
-                {selectedFoods.size > 0 && (
-                  <button
-                    onClick={handleAddSelectedFoods}
-                    disabled={addingFoods}
-                    className="pp-btn-primary w-full text-lg"
-                  >
-                    {addingFoods
-                      ? 'Adding...'
-                      : `Add ${selectedFoods.size} food${selectedFoods.size > 1 ? 's' : ''}`
-                    }
-                  </button>
-                )}
-              </>
-            )}
+              {/* Empty State */}
+              {!loading && !error && searchQuery.length === 0 && (
+                <div className="pp-state-copy">
+                  Start typing to add a plant to your week &mdash; try &ldquo;blueberries&rdquo; or &ldquo;sweet potato&rdquo;.
+                </div>
+              )}
+            </div>
 
-            {/* Empty State */}
-            {!loading && !error && searchQuery.length === 0 && (
-              <div className="text-center py-8" style={{ color: 'var(--faint)' }}>
-                Start typing to search for foods
-              </div>
+            {/* Add Selected Button */}
+            {selectedFoods.size > 0 && (
+              <button
+                onClick={handleAddSelectedFoods}
+                disabled={addingFoods}
+                className="pp-btn-primary w-full text-lg mt-4"
+              >
+                {addingFoods
+                  ? 'Adding...'
+                  : `Add ${selectedFoods.size} food${selectedFoods.size > 1 ? 's' : ''}`
+                }
+              </button>
             )}
           </>
         )}

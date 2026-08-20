@@ -7,6 +7,7 @@ import AddFoodModal from '../components/AddFoodModal';
 import WeeklyHistory from '../components/WeeklyHistory';
 import ShareCard from '../components/ShareCard';
 import ColorWheel from '../components/ColorWheel';
+import LogoMark from '../components/LogoMark';
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
@@ -88,9 +89,12 @@ export default function Dashboard() {
         {/* Header */}
         <header className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-[family-name:var(--font-playfair)] font-bold mb-2" style={{ color: '#d4006f' }}>
-              Plate Palette
-            </h1>
+            <div className="flex items-center gap-2 mb-2">
+              <LogoMark size={30} />
+              <h1 className="text-4xl font-[family-name:var(--font-playfair)] font-bold" style={{ color: 'var(--ink)' }}>
+                Plate Palette
+              </h1>
+            </div>
             <p className="pp-eyebrow" style={{ color: '#7a8ba0' }}>
               Week of {new Date(weekDates.week_starting_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(weekDates.week_ending_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </p>
