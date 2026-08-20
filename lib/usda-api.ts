@@ -33,14 +33,19 @@ function toCanonicalName(description: string): string {
   return name.replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// True when the query matches the start of any whitespace-separated word in
-// the canonical name (case-insensitive). Hyphens are NOT word boundaries, so
-// "apple" matches "Apples" and "Green Apples" but not "Rose-Apples".
-function matchesQueryPrefix(canonical: string, query: string): boolean {
+// True when every whitespace-separated word in the query appears at the start
+// of some word in the description, where "word start" means the start of the
+// string or after whitespace/comma. Hyphens are NOT word boundaries — this is
+// what keeps "apple" from matching "Rose-apples" while still letting
+// "green beans" match "Beans, snap, green, raw".
+function matchesQueryPrefix(description: string, query: string): boolean {
   const q = query.toLowerCase().trim();
   if (!q) return true;
-  const c = canonical.toLowerCase();
-  return c.startsWith(q) || c.includes(' ' + q);
+  const text = description.toLowerCase();
+  return q.split(/\s+/).every(word => {
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(?:^|[\\s,])${escaped}`).test(text);
+  });
 }
 
 export async function searchFoods(query: string, pageSize: number = 50): Promise<USDASearchResponse> {
@@ -68,8 +73,8 @@ export async function searchFoods(query: string, pageSize: number = 50): Promise
         const category = (food as { foodCategory?: string }).foodCategory;
         if (!category || !ALLOWED_FOOD_CATEGORIES.has(category)) continue;
 
+        if (!matchesQueryPrefix(food.description, query)) continue;
         const canonical = toCanonicalName(food.description);
-        if (!matchesQueryPrefix(canonical, query)) continue;
         const key = canonical.toLowerCase();
         const existing = seen.get(key);
         if (!existing || (existing.dataType !== 'Foundation' && food.dataType === 'Foundation')) {
