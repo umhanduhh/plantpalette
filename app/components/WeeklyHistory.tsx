@@ -64,7 +64,7 @@ export default function WeeklyHistory({ foodLogs, weekStartDate, weekEndDate, on
 
   return (
     <div className="mb-8">
-      <h3 className="text-xl font-[family-name:var(--font-playfair)] font-bold mb-4" style={{ color: '#d4006f' }}>
+      <h3 className="text-xl font-[family-name:var(--font-playfair)] font-bold mb-4" style={{ color: 'var(--ink)' }}>
         This Week's Foods
       </h3>
 
@@ -80,11 +80,11 @@ export default function WeeklyHistory({ foodLogs, weekStartDate, weekEndDate, on
           if (logs.length === 0) return null;
 
           return (
-            <div key={dateStr} className="bg-gray-50 rounded-xl p-4">
+            <div key={dateStr} className="rounded-xl p-4" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border-warm)' }}>
               {/* Day Header */}
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h4 className="font-semibold text-gray-900">
+                  <h4 className="font-semibold" style={{ color: 'var(--ink)' }}>
                     {dayName}
                     {isToday && (
                       <span className="ml-2 text-sm font-normal px-2 py-1 rounded-full text-white" style={{ backgroundColor: '#ff6b35' }}>
@@ -92,7 +92,7 @@ export default function WeeklyHistory({ foodLogs, weekStartDate, weekEndDate, on
                       </span>
                     )}
                   </h4>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm" style={{ color: 'var(--muted)' }}>
                     {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </p>
                 </div>
@@ -104,13 +104,13 @@ export default function WeeklyHistory({ foodLogs, weekStartDate, weekEndDate, on
               {/* Foods List */}
               <div className="space-y-2">
                 {logs.map((log) => (
-                  <div key={log.id} className="bg-white rounded-lg p-3 flex items-center justify-between gap-3">
+                  <div key={log.id} className="rounded-lg p-3 flex items-center justify-between gap-3" style={{ background: 'var(--surface)' }}>
                     <button
                       onClick={() => setSelectedFood(log)}
                       className="flex-1 text-left hover:opacity-70 transition-opacity"
                     >
-                      <p className="font-medium text-gray-900">{log.food_name}</p>
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="font-medium" style={{ color: 'var(--ink)' }}>{log.food_name}</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--faint)' }}>
                         {new Date(log.logged_at).toLocaleTimeString('en-US', {
                           hour: 'numeric',
                           minute: '2-digit'
@@ -132,10 +132,10 @@ export default function WeeklyHistory({ foodLogs, weekStartDate, weekEndDate, on
                     {showDeleteConfirm === log.id && (
                       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                         <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
-                          <h3 className="text-xl font-[family-name:var(--font-playfair)] font-bold mb-2" style={{ color: '#d4006f' }}>
+                          <h3 className="text-xl font-[family-name:var(--font-playfair)] font-bold mb-2" style={{ color: 'var(--ink)' }}>
                             Delete this food?
                           </h3>
-                          <p className="text-gray-600 mb-6">
+                          <p className="mb-6" style={{ color: 'var(--body-text)' }}>
                             Remove <span className="font-semibold">{log.food_name}</span> from your log?
                           </p>
                           <div className="flex gap-3">

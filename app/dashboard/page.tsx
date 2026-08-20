@@ -6,6 +6,7 @@ import { FoodLog, User, getWeekDates, formatLocalDate } from '@/lib/types';
 import AddFoodModal from '../components/AddFoodModal';
 import WeeklyHistory from '../components/WeeklyHistory';
 import ShareCard from '../components/ShareCard';
+import ColorWheel from '../components/ColorWheel';
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
@@ -75,14 +76,14 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-lg font-poppins text-gray-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--canvas)' }}>
+        <div className="text-lg font-poppins" style={{ color: 'var(--body-text)' }}>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 py-8 font-[family-name:var(--font-poppins)]">
+    <div className="min-h-screen px-4 py-8 font-[family-name:var(--font-poppins)]" style={{ background: 'var(--canvas)' }}>
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <header className="mb-8 flex items-center justify-between">
@@ -90,7 +91,7 @@ export default function Dashboard() {
             <h1 className="text-4xl font-[family-name:var(--font-playfair)] font-bold mb-2" style={{ color: '#d4006f' }}>
               Plate Palette
             </h1>
-            <p className="text-gray-600">
+            <p className="pp-eyebrow" style={{ color: '#7a8ba0' }}>
               Week of {new Date(weekDates.week_starting_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(weekDates.week_ending_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </p>
           </div>
@@ -118,25 +119,16 @@ export default function Dashboard() {
         </header>
 
         {/* Progress Section */}
-        <div className="mb-8 p-6 bg-gradient-to-br from-pink-50 to-orange-50 rounded-2xl shadow-sm">
-          <div className="mb-4">
-            <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold mb-1" style={{ color: '#d4006f' }}>
+        <div className="pp-card mb-8 p-6">
+          <div className="mb-6 text-center">
+            <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold" style={{ color: 'var(--ink)' }}>
               Your Weekly Variety
             </h2>
-            <p className="text-3xl font-bold mb-4" style={{ color: '#ff6b35' }}>
-              {uniqueFoodsCount} / {weeklyGoal} foods
-            </p>
           </div>
 
-          {/* Progress Bar */}
-          <div className="relative w-full h-6 bg-white rounded-full overflow-hidden shadow-inner mb-4">
-            <div
-              className="h-full transition-all duration-500 ease-out rounded-full"
-              style={{
-                width: `${progressPercent}%`,
-                background: 'linear-gradient(90deg, #d4006f 0%, #ff6b35 50%, #52b788 100%)',
-              }}
-            />
+          {/* Color Wheel */}
+          <div className="mb-6">
+            <ColorWheel count={uniqueFoodsCount} label={`/ ${weeklyGoal} foods`} size={220} />
           </div>
 
           {/* Days of Week Indicators */}
@@ -166,7 +158,7 @@ export default function Dashboard() {
 
           {/* Celebration Message */}
           {goalMet && (
-            <div className="mt-4 p-4 bg-white rounded-xl shadow-sm">
+            <div className="mt-4 p-4 rounded-xl" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border-warm)' }}>
               <p className="text-lg font-semibold text-center" style={{ color: '#52b788' }}>
                 You did it! You've reached your weekly goal. What a colorful week of eating!
               </p>
@@ -188,8 +180,7 @@ export default function Dashboard() {
         {/* Add Food Button */}
         <button
           onClick={() => setShowAddFoodModal(true)}
-          className="w-full py-4 rounded-xl font-semibold text-white text-lg shadow-lg hover:shadow-xl transition-all mb-8"
-          style={{ background: 'linear-gradient(135deg, #d4006f, #ff6b35)' }}
+          className="pp-btn-primary w-full text-lg mb-8"
         >
           + Add a Food
         </button>

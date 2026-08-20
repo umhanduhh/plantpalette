@@ -143,10 +143,15 @@ In your Supabase dashboard:
 
 Your `.env.local` file should have:
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://heagbwjshukghkpwyznm.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_secret_sCjKqnU9z9TFWXOf_w-D9w_-QIxO_Tp
-NEXT_PUBLIC_USDA_API_KEY=GF3zs7fv2S7fXdhvMR8axcsOgXd0CZtLDoao3B1i
+NEXT_PUBLIC_SUPABASE_URL=https://<your-project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-publishable-key>
+NEXT_PUBLIC_USDA_API_KEY=<your-usda-api-key>
 ```
+
+> ⚠️ **Never commit real keys.** `NEXT_PUBLIC_*` variables are bundled into the
+> browser build, so only use Supabase's **publishable** (anon) key here —
+> never the `sb_secret_...` secret key. Get it from the Supabase dashboard:
+> **Project Settings → API Keys**. `.env.local` is gitignored; keep it that way.
 
 ## Development Commands
 

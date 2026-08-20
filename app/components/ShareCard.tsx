@@ -138,23 +138,24 @@ export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartD
       <button
         onClick={() => setShowShareModal(true)}
         disabled={uniqueFoodsCount === 0}
-        className="w-full py-4 rounded-xl font-semibold text-white text-lg shadow-lg hover:shadow-xl transition-all mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ background: 'linear-gradient(135deg, #4cc9f0, #52b788)' }}
+        className="pp-btn-primary w-full text-lg mb-4"
       >
         📱 Share This Week
       </button>
 
-      {/* Share Modal */}
+      {/* Share Modal (design 2a bottom sheet) */}
       {showShareModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" style={{ background: 'var(--surface)', borderRadius: 'var(--r-sheet)' }}>
+            <div className="pp-grabber mb-4" />
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold" style={{ color: '#d4006f' }}>
+              <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold" style={{ color: 'var(--ink)' }}>
                 Share Your Week
               </h2>
               <button
                 onClick={() => setShowShareModal(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                className="text-2xl leading-none"
+                style={{ color: 'var(--faint)' }}
               >
                 ×
               </button>
@@ -169,7 +170,7 @@ export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartD
                   height: '1920px',
                   transform: 'scale(0.278)',
                   transformOrigin: 'top left',
-                  background: 'linear-gradient(180deg, #fff5f8 0%, #fff9f0 50%, #f0f9ff 100%)',
+                  background: 'linear-gradient(180deg, #ffffff 0%, #f5f1ea 100%)',
                   padding: '120px 80px',
                   fontFamily: 'Poppins, sans-serif',
                   display: 'flex',
@@ -180,42 +181,51 @@ export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartD
               >
                 {/* Card Content */}
                 <div style={{ textAlign: 'center', width: '100%' }}>
-                  {/* Large Circle with Count */}
+                  {/* Large Color Wheel with Count */}
                   <div style={{
+                    position: 'relative',
                     width: '600px',
                     height: '600px',
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #d4006f, #ff6b35)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
+                    background: 'conic-gradient(#d4006f 0deg 45deg, #ff6b35 45deg 95deg, #ffd966 95deg 150deg, #52b788 150deg 225deg, #4cc9f0 225deg 290deg, #f0ece3 290deg 360deg)',
                     margin: '0 auto 80px',
-                    boxShadow: '0 30px 60px rgba(212, 0, 111, 0.3)',
+                    boxShadow: '0 30px 60px rgba(0, 0, 0, 0.12)',
                   }}>
-                    <p style={{
-                      fontSize: '280px',
-                      fontWeight: 'bold',
-                      color: 'white',
-                      lineHeight: 1,
-                      marginBottom: '20px',
+                    <div style={{
+                      position: 'absolute',
+                      inset: '90px',
+                      borderRadius: '50%',
+                      background: '#fff',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
                     }}>
-                      {uniqueFoodsCount}
-                    </p>
-                    <p style={{
-                      fontSize: '70px',
-                      color: 'rgba(255, 255, 255, 0.9)',
-                      fontWeight: 600,
-                    }}>
-                      / {weeklyGoal}
-                    </p>
+                      <p style={{
+                        fontSize: '260px',
+                        fontWeight: 700,
+                        fontFamily: 'Playfair Display, serif',
+                        color: '#1a1a1a',
+                        lineHeight: 1,
+                        marginBottom: '10px',
+                      }}>
+                        {uniqueFoodsCount}
+                      </p>
+                      <p style={{
+                        fontSize: '64px',
+                        color: '#9a9285',
+                        fontWeight: 600,
+                      }}>
+                        / {weeklyGoal}
+                      </p>
+                    </div>
                   </div>
 
                   <h1 style={{
                     fontSize: '100px',
-                    fontWeight: 900,
+                    fontWeight: 700,
                     fontFamily: 'Playfair Display, serif',
-                    color: '#d4006f',
+                    color: '#1a1a1a',
                     marginBottom: '40px',
                     lineHeight: 1.2,
                   }}>
@@ -235,7 +245,7 @@ export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartD
                     <div style={{
                       width: `${progressPercent}%`,
                       height: '100%',
-                      background: 'linear-gradient(90deg, #d4006f 0%, #ff6b35 50%, #52b788 100%)',
+                      background: 'linear-gradient(90deg, #4cc9f0 0%, #52b788 100%)',
                       borderRadius: '25px',
                     }} />
                   </div>
@@ -291,7 +301,7 @@ export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartD
                     </p>
                     <p style={{
                       fontSize: '45px',
-                      color: '#999',
+                      color: '#9a9285',
                     }}>
                       Track your food variety
                     </p>
@@ -304,13 +314,12 @@ export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartD
             <button
               onClick={handleGenerateAndShare}
               disabled={isGenerating}
-              className="w-full py-4 rounded-xl font-semibold text-white text-lg transition-all disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #d4006f, #ff6b35)' }}
+              className="pp-btn-primary w-full text-lg"
             >
               {isGenerating ? 'Generating...' : 'Share Now'}
             </button>
 
-            <p className="text-sm text-gray-500 text-center mt-4">
+            <p className="text-sm text-center mt-4" style={{ color: 'var(--faint)' }}>
               Generate and share your colorful week on social media
             </p>
           </div>

@@ -110,36 +110,37 @@ export default function Settings() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-lg font-poppins text-gray-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--canvas)' }}>
+        <div className="text-lg font-poppins" style={{ color: 'var(--body-text)' }}>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 py-8 font-[family-name:var(--font-poppins)]">
+    <div className="min-h-screen px-4 py-8 font-[family-name:var(--font-poppins)]" style={{ background: 'var(--canvas)' }}>
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center mb-8">
           <button
             onClick={() => router.push('/dashboard')}
-            className="mr-4 text-gray-400 hover:text-gray-600"
+            className="mr-4"
+            style={{ color: 'var(--faint)' }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-4xl font-[family-name:var(--font-playfair)] font-bold" style={{ color: '#d4006f' }}>
+          <h1 className="text-4xl font-[family-name:var(--font-playfair)] font-bold" style={{ color: 'var(--ink)' }}>
             Settings
           </h1>
         </div>
 
         {/* Real-name encouragement banner */}
         {nameIncomplete && !bannerDismissed && (
-          <div className="mb-8 p-4 rounded-2xl flex items-start justify-between gap-4 bg-gradient-to-br from-pink-50 to-orange-50">
+          <div className="mb-8 p-4 rounded-2xl flex items-start justify-between gap-4" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border-warm)' }}>
             <div className="flex items-start gap-3">
               <span className="text-2xl">🌈</span>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm" style={{ color: 'var(--body-text)' }}>
                 Add your <span className="font-semibold">real first and last name</span> to show up
                 in the community newsfeed and cheer on other eaters. You&apos;ll appear as{' '}
                 <span className="font-semibold">First L.</span> — never your full last name or email.
@@ -147,7 +148,8 @@ export default function Settings() {
             </div>
             <button
               onClick={() => setBannerDismissed(true)}
-              className="text-gray-400 hover:text-gray-600 text-xl leading-none flex-shrink-0"
+              className="text-xl leading-none flex-shrink-0"
+              style={{ color: 'var(--faint)' }}
               aria-label="Dismiss"
             >
               ×
@@ -156,15 +158,15 @@ export default function Settings() {
         )}
 
         {/* Profile Settings */}
-        <div className="mb-8 p-6 bg-gray-50 rounded-2xl">
-          <h2 className="text-xl font-[family-name:var(--font-playfair)] font-bold mb-4" style={{ color: '#d4006f' }}>
+        <div className="pp-card mb-8 p-6">
+          <h2 className="text-xl font-[family-name:var(--font-playfair)] font-bold mb-4" style={{ color: 'var(--ink)' }}>
             Profile
           </h2>
           <form onSubmit={handleSaveProfile}>
             <div className="space-y-4 mb-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="firstName" className="block text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>
                     First Name
                   </label>
                   <input
@@ -173,11 +175,11 @@ export default function Settings() {
                     placeholder="Your first name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#d4006f] focus:outline-none transition-colors"
+                    className="pp-input"
                   />
                 </div>
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="lastName" className="block text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>
                     Last Name
                   </label>
                   <input
@@ -186,11 +188,11 @@ export default function Settings() {
                     placeholder="Your last name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#d4006f] focus:outline-none transition-colors"
+                    className="pp-input"
                   />
                 </div>
               </div>
-              <p className="text-sm text-gray-500 -mt-2">
+              <p className="text-sm -mt-2" style={{ color: 'var(--muted)' }}>
                 Your name appears in the community newsfeed as{' '}
                 <span className="font-semibold">
                   {firstName.trim() ? firstName.trim() : 'First'}{' '}
@@ -200,12 +202,12 @@ export default function Settings() {
               </p>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-                <p className="text-gray-600 px-4 py-3 bg-white rounded-xl">{user?.email}</p>
+                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>Email</label>
+                <p className="px-4 py-3 rounded-xl" style={{ color: 'var(--body-text)', background: 'var(--surface-soft)', border: '1px solid var(--border-warm)' }}>{user?.email}</p>
               </div>
 
               <div>
-                <label htmlFor="weeklyGoal" className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="weeklyGoal" className="block text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>
                   Weekly Goal
                 </label>
                 <input
@@ -215,9 +217,9 @@ export default function Settings() {
                   max="100"
                   value={weeklyGoal}
                   onChange={(e) => setWeeklyGoal(parseInt(e.target.value) || 20)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#d4006f] focus:outline-none transition-colors text-lg font-semibold"
+                  className="pp-input text-lg font-semibold"
                 />
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-sm mt-2" style={{ color: 'var(--muted)' }}>
                   Number of unique plant foods per week (5-100)
                 </p>
               </div>
@@ -226,8 +228,7 @@ export default function Settings() {
             <button
               type="submit"
               disabled={saving}
-              className="w-full py-3 rounded-xl font-semibold text-white transition-colors disabled:opacity-50"
-              style={{ backgroundColor: '#52b788' }}
+              className="pp-btn-primary w-full"
             >
               {saving ? 'Saving...' : 'Save Settings'}
             </button>
@@ -245,15 +246,15 @@ export default function Settings() {
         </div>
 
         {/* App Info */}
-        <div className="mb-8 p-6 bg-gray-50 rounded-2xl">
-          <h2 className="text-xl font-[family-name:var(--font-playfair)] font-bold mb-4" style={{ color: '#d4006f' }}>
+        <div className="pp-card mb-8 p-6">
+          <h2 className="text-xl font-[family-name:var(--font-playfair)] font-bold mb-4" style={{ color: 'var(--ink)' }}>
             About
           </h2>
-          <div className="space-y-2 text-gray-600">
+          <div className="space-y-2" style={{ color: 'var(--body-text)' }}>
             <p>
               <span className="font-semibold">Plate Palette</span> helps you track the variety of plant-based foods you eat each week.
             </p>
-            <p className="text-sm text-gray-500 mt-4">
+            <p className="text-sm mt-4" style={{ color: 'var(--muted)' }}>
               Version 1.0.0
             </p>
           </div>

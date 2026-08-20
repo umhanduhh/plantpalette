@@ -43,30 +43,30 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-orange-50 to-blue-50 px-4 font-[family-name:var(--font-poppins)]">
+    <div className="min-h-screen flex items-center justify-center px-4 font-[family-name:var(--font-poppins)]" style={{ background: 'var(--canvas)' }}>
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-5xl font-[family-name:var(--font-playfair)] font-bold mb-4" style={{ color: '#d4006f' }}>
             Plate Palette
           </h1>
-          <p className="text-xl text-gray-600 mb-2">
+          <p className="text-xl mb-2" style={{ color: 'var(--body-text)' }}>
             Track colorful, nutrient-dense foods each week
           </p>
-          <p className="text-gray-500">
+          <p style={{ color: 'var(--muted)' }}>
             Celebrate variety and nutrition science
           </p>
         </div>
 
         {/* Sign In Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold mb-6 text-center" style={{ color: '#ff6b35' }}>
+        <div className="pp-card p-8">
+          <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold mb-6 text-center" style={{ color: 'var(--ink)' }}>
             Get Started
           </h2>
 
           <form onSubmit={handleSignIn} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>
                 Email Address
               </label>
               <input
@@ -76,15 +76,14 @@ export default function Home() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#d4006f] focus:outline-none transition-colors"
+                className="pp-input"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 rounded-xl font-semibold text-white text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ background: 'linear-gradient(135deg, #d4006f, #ff6b35)' }}
+              className="pp-btn-primary w-full text-lg"
             >
               {loading ? 'Sending...' : 'Send Confirmation Link'}
             </button>
@@ -100,7 +99,7 @@ export default function Home() {
             </div>
           )}
 
-          <p className="mt-6 text-sm text-gray-500 text-center">
+          <p className="mt-6 text-sm text-center" style={{ color: 'var(--muted)' }}>
             We'll send you a confirmation link to sign in. No password needed!
           </p>
         </div>
@@ -109,15 +108,15 @@ export default function Home() {
         <div className="mt-8 grid grid-cols-3 gap-4 text-center">
           <div>
             <div className="text-3xl mb-2">🌈</div>
-            <p className="text-sm text-gray-600 font-semibold">Colorful Variety</p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--body-text)' }}>Colorful Variety</p>
           </div>
           <div>
             <div className="text-3xl mb-2">📊</div>
-            <p className="text-sm text-gray-600 font-semibold">Track Progress</p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--body-text)' }}>Track Progress</p>
           </div>
           <div>
             <div className="text-3xl mb-2">🌱</div>
-            <p className="text-sm text-gray-600 font-semibold">Learn Nutrition</p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--body-text)' }}>Learn Nutrition</p>
           </div>
         </div>
       </div>

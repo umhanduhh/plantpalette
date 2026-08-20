@@ -31,7 +31,7 @@ export default function NutritionInfoCard({ food, onClose }: NutritionInfoCardPr
         </div>
 
         {/* Food Name */}
-        <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold mb-6" style={{ color: '#d4006f' }}>
+        <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold mb-6" style={{ color: 'var(--ink)' }}>
           {food.food_name}
         </h2>
 
@@ -39,11 +39,11 @@ export default function NutritionInfoCard({ food, onClose }: NutritionInfoCardPr
         {topNutrients.length > 0 ? (
           <div className="space-y-4">
             {topNutrients.map((nutrient, index) => (
-              <div key={index} className="p-4 rounded-xl" style={{ backgroundColor: index === 0 ? '#fff5f8' : '#f0f9ff' }}>
+              <div key={index} className="p-4 rounded-xl" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border-warm)' }}>
                 <h3 className="font-bold text-lg mb-2" style={{ color: index === 0 ? '#d4006f' : '#4cc9f0' }}>
                   {nutrient.name}
                 </h3>
-                <p className="text-gray-700 text-sm leading-relaxed">
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--body-text)' }}>
                   {nutrient.explanation}
                 </p>
               </div>
@@ -51,7 +51,7 @@ export default function NutritionInfoCard({ food, onClose }: NutritionInfoCardPr
           </div>
         ) : (
           <div className="text-center py-8">
-            <p className="text-gray-500">
+            <p style={{ color: 'var(--muted)' }}>
               Detailed nutrient information not available for this food.
             </p>
           </div>
@@ -60,8 +60,7 @@ export default function NutritionInfoCard({ food, onClose }: NutritionInfoCardPr
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="w-full mt-6 py-3 rounded-xl font-semibold text-white transition-colors"
-          style={{ background: 'linear-gradient(135deg, #d4006f, #ff6b35)' }}
+          className="pp-btn-primary w-full mt-6"
         >
           Got it!
         </button>
