@@ -23,6 +23,61 @@ const funFacts = [
   "Exploring colorful nutrition",
 ];
 
+// The six color-wheel segments (matches the conic-gradient used everywhere).
+const WHEEL_SEGMENTS = [
+  { color: '#d4006f', start: 0, end: 45 },
+  { color: '#ff6b35', start: 45, end: 95 },
+  { color: '#ffd966', start: 95, end: 150 },
+  { color: '#52b788', start: 150, end: 225 },
+  { color: '#4cc9f0', start: 225, end: 290 },
+  { color: '#f0ece3', start: 290, end: 360 },
+];
+
+function arcPath(cx: number, cy: number, r: number, start: number, end: number): string {
+  const p = (angle: number) => {
+    const a = ((angle - 90) * Math.PI) / 180;
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  };
+  const [x1, y1] = p(end);
+  const [x2, y2] = p(start);
+  const large = end - start > 180 ? 1 : 0;
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 0 ${x2} ${y2} Z`;
+}
+
+/**
+ * SVG color wheel — an SVG ring (so html2canvas can rasterize it; it cannot
+ * render CSS conic-gradient) with an HTML white center holding count + label.
+ */
+function WheelSvg({ size, ring, count, label }: { size: number; ring: number; count: number | string; label: string }) {
+  const r = size / 2;
+  return (
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block' }}>
+        {WHEEL_SEGMENTS.map((s) => (
+          <path key={s.color} d={arcPath(r, r, r, s.start, s.end)} fill={s.color} />
+        ))}
+      </svg>
+      <div
+        style={{
+          position: 'absolute',
+          inset: ring,
+          borderRadius: '50%',
+          background: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div style={{ fontFamily: 'Playfair Display, serif', fontSize: size * 0.24, fontWeight: 700, color: '#1a1a1a', lineHeight: 1 }}>
+          {count}
+        </div>
+        <div style={{ fontSize: Math.max(11, size * 0.065), color: '#9a9285', marginTop: 4 }}>{label}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartDate, weekEndDate }: ShareCardProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -44,22 +99,11 @@ export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartD
     setIsGenerating(true);
 
     try {
-      // Temporarily remove transform for capture
-      const originalTransform = cardRef.current.style.transform;
-      cardRef.current.style.transform = 'none';
-
-      // Generate image from HTML (Instagram Story size: 1080x1920)
+      // Capture the preview card at 3x for a crisp shareable image.
       const canvas = await html2canvas(cardRef.current, {
-        scale: 1,
-        backgroundColor: '#ffffff',
-        width: 1080,
-        height: 1920,
-        windowWidth: 1080,
-        windowHeight: 1920,
+        scale: 3,
+        backgroundColor: '#fafaf7',
       });
-
-      // Restore transform
-      cardRef.current.style.transform = originalTransform;
 
       // Convert to blob
       canvas.toBlob(async (blob) => {
@@ -161,152 +205,50 @@ export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartD
               </button>
             </div>
 
-            {/* Preview Card */}
-            <div className="mb-6 overflow-hidden rounded-xl shadow-lg" style={{ width: '300px', height: '533px' }}>
-              <div
-                ref={cardRef}
-                style={{
-                  width: '1080px',
-                  height: '1920px',
-                  transform: 'scale(0.278)',
-                  transformOrigin: 'top left',
-                  background: 'linear-gradient(180deg, #ffffff 0%, #f5f1ea 100%)',
-                  padding: '120px 80px',
-                  fontFamily: 'Poppins, sans-serif',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                {/* Card Content */}
-                <div style={{ textAlign: 'center', width: '100%' }}>
-                  {/* Large Color Wheel with Count */}
-                  <div style={{
-                    position: 'relative',
-                    width: '600px',
-                    height: '600px',
-                    borderRadius: '50%',
-                    background: 'conic-gradient(#d4006f 0deg 45deg, #ff6b35 45deg 95deg, #ffd966 95deg 150deg, #52b788 150deg 225deg, #4cc9f0 225deg 290deg, #f0ece3 290deg 360deg)',
-                    margin: '0 auto 80px',
-                    boxShadow: '0 30px 60px rgba(0, 0, 0, 0.12)',
-                  }}>
-                    <div style={{
-                      position: 'absolute',
-                      inset: '90px',
-                      borderRadius: '50%',
-                      background: '#fff',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}>
-                      <p style={{
-                        fontSize: '260px',
-                        fontWeight: 700,
-                        fontFamily: 'Playfair Display, serif',
-                        color: '#1a1a1a',
-                        lineHeight: 1,
-                        marginBottom: '10px',
-                      }}>
-                        {uniqueFoodsCount}
-                      </p>
-                      <p style={{
-                        fontSize: '64px',
-                        color: '#9a9285',
-                        fontWeight: 600,
-                      }}>
-                        / {weeklyGoal}
-                      </p>
-                    </div>
-                  </div>
+            {/* Preview Card (design 2a) — this exact element is exported */}
+            <div
+              ref={cardRef}
+              style={{
+                background: '#fafaf7',
+                border: '1px solid #ece6da',
+                borderRadius: '20px',
+                padding: '32px 24px',
+                marginBottom: '24px',
+                fontFamily: 'Poppins, sans-serif',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '18px',
+                textAlign: 'center',
+              }}
+            >
+              <WheelSvg size={180} ring={28} count={uniqueFoodsCount} label={`/ ${weeklyGoal} foods`} />
 
-                  <h1 style={{
-                    fontSize: '100px',
-                    fontWeight: 700,
-                    fontFamily: 'Playfair Display, serif',
-                    color: '#1a1a1a',
-                    marginBottom: '40px',
-                    lineHeight: 1.2,
-                  }}>
-                    Unique Foods This Week
-                  </h1>
+              <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '22px', fontWeight: 700, color: '#1a1a1a', margin: 0, lineHeight: 1.2 }}>
+                Unique Foods This Week
+              </h1>
 
-                  {/* Progress Bar */}
-                  <div style={{
-                    width: '100%',
-                    height: '50px',
-                    backgroundColor: 'white',
-                    borderRadius: '25px',
-                    overflow: 'hidden',
-                    marginBottom: '80px',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-                  }}>
-                    <div style={{
-                      width: `${progressPercent}%`,
-                      height: '100%',
-                      background: 'linear-gradient(90deg, #4cc9f0 0%, #52b788 100%)',
-                      borderRadius: '25px',
-                    }} />
-                  </div>
+              {/* Progress bar */}
+              <div style={{ width: '100%', height: '10px', background: '#f0ece3', borderRadius: '5px', overflow: 'hidden' }}>
+                <div style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #4cc9f0, #52b788)', borderRadius: '5px' }} />
+              </div>
 
-                  {/* Fun Fact / Status */}
-                  {goalMet ? (
-                    <div style={{
-                      backgroundColor: 'rgba(82, 183, 136, 0.15)',
-                      padding: '50px',
-                      borderRadius: '30px',
-                      marginBottom: '80px',
-                    }}>
-                      <p style={{
-                        fontSize: '80px',
-                        color: '#52b788',
-                        fontWeight: 'bold',
-                        marginBottom: '20px',
-                      }}>
-                        Goal Crushed! 🎉
-                      </p>
-                      <p style={{
-                        fontSize: '50px',
-                        color: '#666',
-                      }}>
-                        {funFact}
-                      </p>
-                    </div>
-                  ) : (
-                    <p style={{
-                      fontSize: '60px',
-                      color: '#ff6b35',
-                      fontWeight: 600,
-                      marginBottom: '80px',
-                      lineHeight: 1.4,
-                    }}>
-                      {funFact}
-                    </p>
-                  )}
-
-                  {/* Branding */}
-                  <div style={{
-                    marginTop: 'auto',
-                    paddingTop: '60px',
-                  }}>
-                    <p style={{
-                      fontSize: '90px',
-                      fontWeight: 900,
-                      fontFamily: 'Playfair Display, serif',
-                      color: '#d4006f',
-                      marginBottom: '20px',
-                    }}>
-                      Plate Palette
-                    </p>
-                    <p style={{
-                      fontSize: '45px',
-                      color: '#9a9285',
-                    }}>
-                      Track your food variety
-                    </p>
-                  </div>
+              {/* Fun fact / status */}
+              {goalMet ? (
+                <div style={{ background: 'rgba(82, 183, 136, 0.12)', borderRadius: '16px', padding: '14px 18px' }}>
+                  <p style={{ fontSize: '15px', color: '#52b788', fontWeight: 700, margin: '0 0 4px' }}>Goal Crushed! 🎉</p>
+                  <p style={{ fontSize: '13px', color: '#6b6459', margin: 0 }}>{funFact}</p>
                 </div>
+              ) : (
+                <p style={{ fontSize: '14px', color: '#6b6459', lineHeight: 1.6, margin: 0, maxWidth: '260px' }}>{funFact}</p>
+              )}
+
+              {/* Branding */}
+              <div style={{ marginTop: '4px' }}>
+                <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '16px', fontWeight: 700, color: '#d4006f' }}>
+                  Plate Palette
+                </div>
+                <p style={{ fontSize: '11px', color: '#9a9285', margin: '4px 0 0' }}>Track your food variety</p>
               </div>
             </div>
 
