@@ -50,6 +50,7 @@ const ENTRIES: Array<[string[], PlantColorKey | null, string]> = [
   // Root vegetables
   [['sweet potato', 'sweet potatoes', 'yam', 'yams'], 'orange', 'Root vegetable'],
   [['purple potato', 'purple potatoes'], 'purple', 'Root vegetable'],
+  [['ube'], 'purple', 'Root vegetable'],
   [['potato', 'potatoes'], 'yellow', 'Root vegetable'],
   [['carrot', 'carrots'], 'orange', 'Root vegetable'],
   [['purple carrot'], 'purple', 'Root vegetable'],

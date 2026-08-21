@@ -141,9 +141,31 @@ const REJECT_DESCRIPTION_FRAGMENTS = [
   'coleslaw', 'cole slaw',
 ];
 
+// An explicit vegetarian/vegan qualifier means the animal word describes
+// what it's imitating, not an ingredient — "veggie sausage" isn't sausage.
+const PLANT_QUALIFIER_PATTERN = /\b(veggie|vegetarian|vegan|meatless|mock|imitation)\b|plant[- ]based/i;
+
 function containsAnimalProduct(description: string): boolean {
+  if (PLANT_QUALIFIER_PATTERN.test(description)) return false;
   const words = description.toLowerCase().match(/\b[a-z]+\b/g) || [];
   return words.some(w => ANIMAL_PRODUCT_WORDS.has(w));
+}
+
+// Same word list, exposed for gating user-typed custom food names (see
+// AddFoodModal) rather than USDA search results.
+export const isAnimalProduct = containsAnimalProduct;
+
+// Deterministic synthetic id for a user-typed food that USDA doesn't have
+// (e.g. "ube"). Always negative so it can never collide with a real,
+// always-positive USDA fdcId, and stable per name so re-adding the same
+// custom food dedupes correctly against the same-week check.
+export function customFoodId(name: string): number {
+  let hash = 0;
+  const s = name.trim().toLowerCase();
+  for (let i = 0; i < s.length; i++) {
+    hash = (hash * 31 + s.charCodeAt(i)) | 0;
+  }
+  return -Math.abs(hash || 1);
 }
 
 function isRejectedDescription(description: string): boolean {
