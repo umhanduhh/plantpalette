@@ -10,8 +10,8 @@ export default function TermsOfService() {
   return (
     <div className="min-h-screen px-4 py-12 font-[family-name:var(--font-poppins)]" style={{ background: 'var(--canvas)' }}>
       <div className="max-w-2xl mx-auto">
-        <Link href="/settings" className="text-sm inline-block mb-8" style={{ color: 'var(--faint)' }}>
-          &larr; Back to Settings
+        <Link href="/" className="text-sm inline-block mb-8" style={{ color: 'var(--faint)' }}>
+          &larr; Back to Home
         </Link>
 
         <article className="pp-card p-8" style={{ color: 'var(--body-text)' }}>
@@ -28,8 +28,8 @@ export default function TermsOfService() {
 
           <Section title="Using Plate Palette">
             <p className="mb-3 leading-relaxed">
-              Plate Palette is a meal planning tool. You may use it only for lawful purposes and in accordance with these
-              terms.
+              Plate Palette is a plant-based food variety tracker. You may use it only for lawful purposes and in
+              accordance with these terms.
             </p>
             <p className="mb-3 leading-relaxed">You are responsible for:</p>
             <List

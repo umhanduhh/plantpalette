@@ -10,8 +10,8 @@ export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen px-4 py-12 font-[family-name:var(--font-poppins)]" style={{ background: 'var(--canvas)' }}>
       <div className="max-w-2xl mx-auto">
-        <Link href="/settings" className="text-sm inline-block mb-8" style={{ color: 'var(--faint)' }}>
-          &larr; Back to Settings
+        <Link href="/" className="text-sm inline-block mb-8" style={{ color: 'var(--faint)' }}>
+          &larr; Back to Home
         </Link>
 
         <article className="pp-card p-8" style={{ color: 'var(--body-text)' }}>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import LogoMark from './components/LogoMark';
 
 export default function Home() {
   const [email, setEmail] = useState('');
@@ -69,14 +70,21 @@ export default function Home() {
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <LogoMark size={56} />
+          </div>
           <h1 className="text-5xl font-[family-name:var(--font-playfair)] font-bold mb-4" style={{ color: '#d4006f' }}>
             Plate Palette
           </h1>
           <p className="text-xl mb-2" style={{ color: 'var(--body-text)' }}>
             Track colorful, nutrient-dense foods each week
           </p>
-          <p style={{ color: 'var(--muted)' }}>
+          <p className="mb-2" style={{ color: 'var(--muted)' }}>
             Celebrate variety and nutrition science
+          </p>
+          <p className="text-sm max-w-sm mx-auto" style={{ color: 'var(--muted)' }}>
+            Plate Palette helps you log the plant-based foods you eat, see your variety
+            mapped across a color wheel, hit a weekly goal, and share your progress with friends.
           </p>
         </div>
 
@@ -102,6 +110,11 @@ export default function Home() {
             </svg>
             {googleLoading ? 'Redirecting...' : 'Continue with Google'}
           </button>
+          <p className="text-xs text-center mt-2" style={{ color: 'var(--faint)' }}>
+            We use your Google name, email, and profile photo to create your account.
+            We never access your Gmail or Drive. See our{' '}
+            <a href="/privacy" className="underline">Privacy Policy</a>.
+          </p>
 
           {/* Divider */}
           <div className="flex items-center gap-3 my-5">
@@ -164,6 +177,13 @@ export default function Home() {
             <div className="text-3xl mb-2">🌱</div>
             <p className="text-sm font-semibold" style={{ color: 'var(--body-text)' }}>Learn Nutrition</p>
           </div>
+        </div>
+
+        {/* Legal links */}
+        <div className="mt-8 flex items-center justify-center gap-3 text-xs" style={{ color: 'var(--faint)' }}>
+          <a href="/privacy" className="hover:underline">Privacy Policy</a>
+          <span>·</span>
+          <a href="/terms" className="hover:underline">Terms of Service</a>
         </div>
       </div>
     </div>
