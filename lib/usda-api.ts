@@ -151,10 +151,6 @@ function containsAnimalProduct(description: string): boolean {
   return words.some(w => ANIMAL_PRODUCT_WORDS.has(w));
 }
 
-// Same word list, exposed for gating user-typed custom food names (see
-// AddFoodModal) rather than USDA search results.
-export const isAnimalProduct = containsAnimalProduct;
-
 // Deterministic synthetic id for a user-typed food that USDA doesn't have
 // (e.g. "ube"). Always negative so it can never collide with a real,
 // always-positive USDA fdcId, and stable per name so re-adding the same

@@ -1,21 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { searchFoods, isAnimalProduct, customFoodId } from '@/lib/usda-api';
+import { searchFoods, customFoodId } from '@/lib/usda-api';
 import { USDAFood, formatLocalDate } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import { getPlantColorInfo, PLANT_COLOR_HEX } from '@/lib/plant-colors';
-
-// Shown when a search comes back empty and the query itself reads as an
-// animal product — USDA has nothing to find, and there's nothing to add.
-const NOT_PLANT_MESSAGES = [
-  "Cows eat grass, but that doesn't mean eating cows counts as eating a vegetable!",
-  "That one's an animal product, not a plant one — this app's veggie-only.",
-  "Chickens aren't plants (we checked). This one's not going in your palette.",
-  "Bacon comes from a pig, not a garden. Nice try though.",
-  "Fish swim in water, not soil — that's not a plant food.",
-  "That's animal-derived, not plant-based. Doesn't count here.",
-];
 
 function toTitleCase(s: string): string {
   return s.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
@@ -154,7 +143,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
   const [searchResults, setSearchResults] = useState<USDAFood[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [noResults, setNoResults] = useState<{ query: string; blocked: boolean; message: string } | null>(null);
+  const [noResultsQuery, setNoResultsQuery] = useState<string | null>(null);
   const [selectedFoods, setSelectedFoods] = useState<Map<number, USDAFood>>(new Map());
   const [addingFoods, setAddingFoods] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -175,7 +164,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
     } else {
       setSearchResults([]);
       setError('');
-      setNoResults(null);
+      setNoResultsQuery(null);
     }
 
     return () => {
@@ -188,20 +177,13 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
   async function performSearch() {
     setLoading(true);
     setError('');
-    setNoResults(null);
+    setNoResultsQuery(null);
 
     try {
       const results = await searchFoods(searchQuery);
 
       if (!results.foods || results.foods.length === 0) {
-        const blocked = isAnimalProduct(searchQuery);
-        setNoResults({
-          query: searchQuery,
-          blocked,
-          message: blocked
-            ? NOT_PLANT_MESSAGES[Math.floor(Math.random() * NOT_PLANT_MESSAGES.length)]
-            : '',
-        });
+        setNoResultsQuery(searchQuery);
         setSearchResults([]);
       } else {
         setSearchResults(results.foods);
@@ -418,32 +400,26 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
                 <div className="pp-state-copy">{error}</div>
               )}
 
-              {/* No results — blocked (reads as an animal product) or offer to add as a new food */}
-              {!loading && !error && noResults && (
+              {/* No results — offer to add as a new food */}
+              {!loading && !error && noResultsQuery && (
                 <div className="pp-state-copy">
-                  {noResults.blocked ? (
-                    <p>{noResults.message}</p>
-                  ) : (
-                    <>
-                      <p className="mb-3">
-                        We couldn&apos;t find &ldquo;{noResults.query}&rdquo; in our database.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => handleAddCustomFood(noResults.query)}
-                        className="pp-btn-primary"
-                      >
-                        {selectedFoods.has(customFoodId(noResults.query))
-                          ? `Added ${toTitleCase(noResults.query)}`
-                          : `Add "${toTitleCase(noResults.query)}" as a new food`}
-                      </button>
-                    </>
-                  )}
+                  <p className="mb-3">
+                    We couldn&apos;t find &ldquo;{noResultsQuery}&rdquo; in our database.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleAddCustomFood(noResultsQuery)}
+                    className="pp-btn-primary"
+                  >
+                    {selectedFoods.has(customFoodId(noResultsQuery))
+                      ? `Added ${toTitleCase(noResultsQuery)}`
+                      : `Add "${toTitleCase(noResultsQuery)}" as a new food`}
+                  </button>
                 </div>
               )}
 
               {/* Results — Best match + Other matches */}
-              {!loading && !error && !noResults && searchResults.length > 0 && (
+              {!loading && !error && !noResultsQuery && searchResults.length > 0 && (
                 <div className="mb-2">
                   {best && (
                     <div className="mb-4">
