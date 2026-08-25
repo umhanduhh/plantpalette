@@ -4,7 +4,8 @@ import { useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { FoodLog, User } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
-import { getPlantColorInfo, PLANT_COLOR_HEX_RAW } from '@/lib/plant-colors';
+import { getPlantColorInfo, PLANT_COLOR_HEX_RAW, PlantColorKey } from '@/lib/plant-colors';
+import { buildWheelWedges } from './ColorWheel';
 import LogoMark from './LogoMark';
 
 interface ShareCardProps {
@@ -15,15 +16,16 @@ interface ShareCardProps {
   weekEndDate: string;
 }
 
-// The six color-wheel segments (matches the conic-gradient used everywhere).
-const WHEEL_SEGMENTS = [
-  { color: '#d4006f', start: 0, end: 45 },
-  { color: '#ff6b35', start: 45, end: 95 },
-  { color: '#ffd966', start: 95, end: 150 },
-  { color: '#52b788', start: 150, end: 225 },
-  { color: '#4cc9f0', start: 225, end: 290 },
-  { color: '#f0ece3', start: 290, end: 360 },
-];
+const WHEEL_EMPTY = '#f0ece3';
+
+// Same arc-length progress fill as ColorWheel, in raw hex for SVG/html2canvas.
+function buildWheelSegments(colorCounts: Partial<Record<PlantColorKey, number>>, goal: number) {
+  return buildWheelWedges(colorCounts, goal).map(w => ({
+    color: w.color ? PLANT_COLOR_HEX_RAW[w.color] : WHEEL_EMPTY,
+    start: w.start,
+    end: w.end,
+  }));
+}
 
 function arcPath(cx: number, cy: number, r: number, start: number, end: number): string {
   const p = (angle: number) => {
@@ -41,13 +43,14 @@ function arcPath(cx: number, cy: number, r: number, start: number, end: number):
  * render CSS conic-gradient) with a white center holding a three-tier
  * hierarchy: big count, "plant colors", small "this week".
  */
-function WheelSvg({ size, ring, count }: { size: number; ring: number; count: number | string }) {
+function WheelSvg({ size, ring, count, colorCounts, goal }: { size: number; ring: number; count: number | string; colorCounts: Partial<Record<PlantColorKey, number>>; goal: number }) {
   const r = size / 2;
+  const segments = buildWheelSegments(colorCounts, goal);
   return (
     <div style={{ position: 'relative', width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block' }}>
-        {WHEEL_SEGMENTS.map((s) => (
-          <path key={s.color} d={arcPath(r, r, r, s.start, s.end)} fill={s.color} />
+        {segments.map((s, i) => (
+          <path key={i} d={arcPath(r, r, r, s.start, s.end)} fill={s.color} />
         ))}
       </svg>
       <div
@@ -100,6 +103,12 @@ export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartD
   const namesToShow = uniqueFoodNames.slice(0, 5);
   const remainingCount = uniqueFoodNames.length - namesToShow.length;
 
+  const colorCounts: Partial<Record<PlantColorKey, number>> = {};
+  uniqueFoodNames.forEach(name => {
+    const info = getPlantColorInfo(name);
+    if (info?.color) colorCounts[info.color] = (colorCounts[info.color] || 0) + 1;
+  });
+
   async function handleGenerateAndShare() {
     if (!cardRef.current) return;
 
@@ -126,7 +135,8 @@ export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartD
             await navigator.share({
               files: [file],
               title: 'My Plate Palette Week',
-              text: `${uniqueFoodsCount} different plant foods this week!`,
+              text: `Count the colors on your plate! ${uniqueFoodsCount} different plant foods this week 🌈`,
+              url: 'https://platepalette.app/',
             });
 
             // Log the share
@@ -227,7 +237,7 @@ export default function ShareCard({ user, foodLogs, uniqueFoodsCount, weekStartD
                 textAlign: 'center',
               }}
             >
-              <WheelSvg size={224} ring={32} count={uniqueFoodsCount} />
+              <WheelSvg size={224} ring={32} count={uniqueFoodsCount} colorCounts={colorCounts} goal={weeklyGoal} />
 
               <p style={{ fontFamily: 'Playfair Display, serif', fontSize: '22px', fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
                 {headline}

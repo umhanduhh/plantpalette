@@ -99,10 +99,14 @@ const ENTRIES: Array<[string[], PlantColorKey | null, string]> = [
   [['eggplant', 'aubergine'], 'purple', 'Vegetable'],
 
   // Alliums
-  [['red onion'], 'purple', 'Vegetable'],
+  [['red onion', 'red onions'], 'purple', 'Vegetable'],
+  [['purple onion', 'purple onions'], 'purple', 'Vegetable'],
+  [['onion, green', 'onions, green'], 'green', 'Vegetable'],
+  [['onion, purple', 'onions, purple'], 'purple', 'Vegetable'],
+  [['onion, red', 'onions, red'], 'purple', 'Vegetable'],
   [['onion', 'onions', 'shallot', 'shallots', 'leek', 'leeks'], 'yellow', 'Vegetable'],
   [['garlic'], 'yellow', 'Vegetable'],
-  [['scallion', 'scallions', 'green onion', 'chive', 'chives'], 'green', 'Vegetable'],
+  [['scallion', 'scallions', 'green onion', 'green onions', 'spring onion', 'spring onions', 'chive', 'chives'], 'green', 'Vegetable'],
 
   // Other vegetables
   [['broccoli'], 'green', 'Vegetable'],

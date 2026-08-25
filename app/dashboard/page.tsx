@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { FoodLog, User, getWeekDates, formatLocalDate } from '@/lib/types';
+import { getPlantColorInfo, PlantColorKey } from '@/lib/plant-colors';
 import AddFoodModal from '../components/AddFoodModal';
 import WeeklyHistory from '../components/WeeklyHistory';
 import ShareCard from '../components/ShareCard';
@@ -75,6 +76,17 @@ export default function Dashboard() {
   const progressPercent = Math.min((uniqueFoodsCount / weeklyGoal) * 100, 100);
   const goalMet = uniqueFoodsCount >= weeklyGoal;
 
+  // Unique foods logged this week, tallied by plant color, for the wheel fill.
+  const uniqueLogsById = new Map<number, FoodLog>();
+  foodLogs.forEach(log => {
+    if (!uniqueLogsById.has(log.fdc_id)) uniqueLogsById.set(log.fdc_id, log);
+  });
+  const colorCounts: Partial<Record<PlantColorKey, number>> = {};
+  uniqueLogsById.forEach(log => {
+    const info = getPlantColorInfo(log.food_name);
+    if (info?.color) colorCounts[info.color] = (colorCounts[info.color] || 0) + 1;
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--canvas)' }}>
@@ -132,7 +144,7 @@ export default function Dashboard() {
 
           {/* Color Wheel */}
           <div className="mb-6">
-            <ColorWheel count={uniqueFoodsCount} label={`/ ${weeklyGoal} foods`} size={220} />
+            <ColorWheel count={uniqueFoodsCount} label={`/ ${weeklyGoal} foods`} size={220} colorCounts={colorCounts} goal={weeklyGoal} />
           </div>
 
           {/* Days of Week Indicators */}
