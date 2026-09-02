@@ -1,13 +1,89 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import LogoMark from './components/LogoMark';
+import ColorWheel from './components/ColorWheel';
+import { PLANT_COLOR_HEX, PlantColorKey } from '@/lib/plant-colors';
+import { NUTRIENT_INFO } from '@/lib/nutrient-info';
+
+type DemoFood = [name: string, color: PlantColorKey | null, nutrient: string, day: number];
+
+// A fixed script for the self-running "live demo" on the hero. Decorative
+// only — touches no real data. Nutrient names must match keys produced by
+// NUTRIENT_INFO below.
+const DEMO_FOODS: DemoFood[] = [
+  ['Strawberries', 'red', 'Vitamin C', 0],
+  ['Sweet potato', 'orange', 'Vitamin A', 0],
+  ['Chickpeas', null, 'Fiber', 0],
+  ['Kale', 'green', 'Vitamin K', 1],
+  ['Blueberries', 'blue', 'Fiber', 1],
+  ['Red cabbage', 'purple', 'Vitamin C', 1],
+  ['Lemon', 'yellow', 'Vitamin C', 2],
+  ['Black beans', null, 'Folate', 2],
+  ['Avocado', 'green', 'Potassium', 3],
+  ['Beets', 'red', 'Folate', 3],
+  ['Carrots', 'orange', 'Vitamin A', 3],
+  ['Almonds', null, 'Magnesium', 4],
+  ['Broccoli', 'green', 'Vitamin C', 4],
+  ['Plums', 'purple', 'Fiber', 4],
+  ['Quinoa', null, 'Magnesium', 5],
+  ['Mango', 'orange', 'Vitamin A', 5],
+  ['Spinach', 'green', 'Iron', 5],
+  ['Blackberries', 'purple', 'Fiber', 6],
+  ['Pumpkin seeds', null, 'Magnesium', 6],
+  ['Bell pepper', 'red', 'Vitamin C', 6],
+];
+const DEMO_GOAL = DEMO_FOODS.length;
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const NUTRIENT_EXPLANATIONS: Record<string, string> = Object.fromEntries(
+  Object.values(NUTRIENT_INFO).map(({ name, explanation }) => [name, explanation])
+);
+
+// Drives the demo's step count on a single self-correcting timer. The next
+// delay is computed from a ref rather than from state read after setState,
+// since React may not have re-rendered by the time the following line runs.
+function useDemoStep(total: number) {
+  const [step, setStep] = useState(0);
+  const stepRef = useRef(0);
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      stepRef.current = total;
+      setStep(total);
+      return;
+    }
+
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = (ms: number) => {
+      timer = setTimeout(tick, ms);
+    };
+    const tick = () => {
+      if (!alive) return;
+      const next = stepRef.current >= total ? 0 : stepRef.current + 1;
+      stepRef.current = next;
+      setStep(next);
+      schedule(next >= total ? 2800 : 850);
+    };
+    schedule(700);
+
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [total]);
+
+  return step;
+}
 
 export default function Home() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const demoStep = useDemoStep(DEMO_GOAL);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -17,8 +93,6 @@ export default function Home() {
       }
     });
   }, []);
-
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
@@ -65,42 +139,203 @@ export default function Home() {
     }
   }
 
+  const addedFoods = DEMO_FOODS.slice(0, demoStep);
+  const colorCounts = addedFoods.reduce<Partial<Record<PlantColorKey, number>>>((acc, [, color]) => {
+    if (color) acc[color] = (acc[color] || 0) + 1;
+    return acc;
+  }, {});
+  const activeDays = new Set(addedFoods.map(([, , , day]) => day));
+  const visibleChips = addedFoods.slice(-6);
+  const lastFood = addedFoods[addedFoods.length - 1];
+  const nutrientName = lastFood ? lastFood[2] : 'Vitamin C';
+  const nutrientDotColor = lastFood && lastFood[1] ? PLANT_COLOR_HEX[lastFood[1]] : '#c9c2b4';
+  const goalMet = demoStep >= DEMO_GOAL;
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 font-[family-name:var(--font-poppins)]" style={{ background: 'var(--canvas)' }}>
-      <div className="max-w-md w-full">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <LogoMark size={56} />
-          </div>
-          <h1 className="text-5xl font-[family-name:var(--font-playfair)] font-bold mb-4" style={{ color: '#d4006f' }}>
+    <div
+      className="min-h-screen flex justify-center font-[family-name:var(--font-poppins)]"
+      style={{
+        padding: '28px 16px 32px',
+        background: 'radial-gradient(560px 420px at 50% -6%, #fdf7ee 0%, var(--canvas) 62%)',
+      }}
+    >
+      <div className="w-full flex flex-col" style={{ maxWidth: 420, gap: 20 }}>
+        {/* Wordmark */}
+        <div className="flex items-center justify-center" style={{ gap: 10 }}>
+          <LogoMark size={34} />
+          <span
+            className="font-[family-name:var(--font-playfair)] font-bold"
+            style={{ fontSize: 19, color: 'var(--ink)', letterSpacing: '-0.01em' }}
+          >
             Plate Palette
+          </span>
+        </div>
+
+        {/* Hero copy */}
+        <div className="text-center">
+          <h1
+            className="font-[family-name:var(--font-playfair)] font-black"
+            style={{
+              fontSize: 40,
+              lineHeight: 1.02,
+              letterSpacing: '-0.02em',
+              color: 'var(--primary-magenta)',
+              marginBottom: 14,
+              textWrap: 'balance',
+            }}
+          >
+            Track colorful, nutrient‑dense foods each week
           </h1>
-          <p className="text-xl mb-2" style={{ color: 'var(--body-text)' }}>
-            Track colorful, nutrient-dense foods each week
-          </p>
-          <p className="mb-2" style={{ color: 'var(--muted)' }}>
+          <p className="font-medium" style={{ fontSize: 17, color: 'var(--body-text)', marginBottom: 10 }}>
             Celebrate variety and nutrition science
           </p>
-          <p className="text-sm max-w-sm mx-auto" style={{ color: 'var(--muted)' }}>
+          <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--muted)', textWrap: 'pretty' }}>
             Plate Palette helps you log the plant-based foods you eat, see your variety
             mapped across a color wheel, hit a weekly goal, and share your progress with friends.
           </p>
         </div>
 
-        {/* Sign In Card */}
-        <div className="pp-card p-8">
-          <h2 className="text-2xl font-[family-name:var(--font-playfair)] font-bold mb-6 text-center" style={{ color: 'var(--ink)' }}>
+        {/* Live demo card */}
+        <div className="pp-card flex flex-col" style={{ padding: '20px 18px 18px', gap: 16 }}>
+          <div className="flex items-center justify-between">
+            <span className="pp-eyebrow" style={{ color: 'var(--muted)', fontWeight: 700 }}>
+              Your weekly variety
+            </span>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: '.04em',
+                textTransform: 'uppercase',
+                color: 'var(--fresh-green)',
+              }}
+            >
+              Live demo
+            </span>
+          </div>
+
+          <div className="pp-demo-wheel">
+            <ColorWheel
+              count={demoStep}
+              label={`/ ${DEMO_GOAL} foods`}
+              size={196}
+              ring={30}
+              colorCounts={colorCounts}
+              goal={DEMO_GOAL}
+            />
+          </div>
+
+          <div className="flex justify-between" style={{ gap: 6 }}>
+            {DAY_LABELS.map((label, i) => {
+              const active = activeDays.has(i);
+              return (
+                <div
+                  key={label}
+                  className="flex items-center justify-center"
+                  style={{
+                    flex: 1,
+                    height: 38,
+                    borderRadius: '50%',
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    transition: 'all .35s',
+                    background: active ? 'var(--grad-primary)' : 'var(--wheel-empty)',
+                    color: active ? '#fff' : 'var(--faint)',
+                    boxShadow: active ? '0 4px 10px rgba(76,201,240,.3)' : 'none',
+                  }}
+                >
+                  {label}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-wrap" style={{ gap: 7, minHeight: 74, alignContent: 'flex-start' }}>
+            {visibleChips.map(([name, color], i) => (
+              <span key={`${name}-${i}`} className="pp-chip">
+                <span className="pp-chip-dot" style={{ background: color ? PLANT_COLOR_HEX[color] : '#d8d2c5' }} />
+                {name}
+              </span>
+            ))}
+          </div>
+
+          {goalMet && (
+            <div
+              className="text-center font-semibold"
+              style={{
+                padding: '12px 14px',
+                borderRadius: 'var(--r-btn)',
+                background: 'var(--surface-soft)',
+                border: '1px solid var(--border-warm)',
+                color: 'var(--fresh-green)',
+                fontSize: 14,
+              }}
+            >
+              You did it! You’ve reached your weekly goal. What a colorful week of eating!
+            </div>
+          )}
+
+          <div
+            style={{
+              background: 'var(--surface-soft)',
+              border: '1px solid var(--border-warm)',
+              borderRadius: 'var(--r-btn)',
+              padding: '14px 16px',
+            }}
+          >
+            <div className="flex items-center" style={{ gap: 8, marginBottom: 6 }}>
+              <span style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: nutrientDotColor }} />
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '.05em',
+                  textTransform: 'uppercase',
+                  color: 'var(--muted)',
+                }}
+              >
+                {nutrientName}
+              </span>
+            </div>
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: 'var(--chip-text)', textWrap: 'pretty' }}>
+              {NUTRIENT_EXPLANATIONS[nutrientName]}
+            </p>
+          </div>
+        </div>
+
+        {/* Sign-in card */}
+        <div
+          style={{
+            background: 'var(--surface)',
+            borderRadius: 'var(--r-sheet)',
+            border: '1px solid var(--border-warm)',
+            boxShadow: '0 18px 48px rgba(26,26,26,.13)',
+            padding: '26px 22px 24px',
+          }}
+        >
+          <h2
+            className="font-[family-name:var(--font-playfair)] font-bold text-center"
+            style={{ fontSize: 24, color: 'var(--ink)', marginBottom: 4 }}
+          >
             Get Started
           </h2>
+          <p className="text-center" style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 20 }}>
+            Free. No password needed.
+          </p>
 
           {/* Google OAuth */}
           <button
             type="button"
             onClick={handleGoogleSignIn}
             disabled={googleLoading}
-            className="w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold transition-colors disabled:opacity-50"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border-warm)', color: 'var(--ink)' }}
+            className="w-full flex items-center justify-center gap-3 font-semibold transition-colors disabled:opacity-50 hover:bg-[var(--surface-chip)] hover:shadow-[0_6px_18px_rgba(0,0,0,.06)]"
+            style={{
+              minHeight: 52,
+              borderRadius: 'var(--r-btn)',
+              background: 'var(--surface)',
+              border: '1px solid var(--border-warm)',
+              color: 'var(--ink)',
+            }}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
               <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
@@ -110,22 +345,22 @@ export default function Home() {
             </svg>
             {googleLoading ? 'Redirecting...' : 'Continue with Google'}
           </button>
-          <p className="text-xs text-center mt-2" style={{ color: 'var(--faint)' }}>
+          <p className="text-center" style={{ fontSize: 11.5, color: 'var(--faint)', lineHeight: 1.5, marginTop: 8 }}>
             We use your Google name, email, and profile photo to create your account.
             We never access your Gmail or Drive. See our{' '}
             <a href="/privacy" className="underline">Privacy Policy</a>.
           </p>
 
           {/* Divider */}
-          <div className="flex items-center gap-3 my-5">
+          <div className="flex items-center" style={{ gap: 12, margin: '18px 0' }}>
             <div className="flex-1 h-px" style={{ background: 'var(--border-warm)' }} />
-            <span className="text-sm" style={{ color: 'var(--muted)' }}>or</span>
+            <span style={{ fontSize: 14, color: 'var(--muted)' }}>or</span>
             <div className="flex-1 h-px" style={{ background: 'var(--border-warm)' }} />
           </div>
 
-          <form onSubmit={handleSignIn} className="space-y-4">
+          <form onSubmit={handleSignIn} className="flex flex-col" style={{ gap: 14 }}>
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold mb-2" style={{ color: 'var(--ink)' }}>
+              <label htmlFor="email" className="block font-semibold" style={{ fontSize: 14, marginBottom: 8, color: 'var(--ink)' }}>
                 Email Address
               </label>
               <input
@@ -136,13 +371,15 @@ export default function Home() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="pp-input"
+                style={{ minHeight: 52, fontSize: 16 }}
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="pp-btn-primary w-full text-lg"
+              className="pp-btn-primary w-full"
+              style={{ minHeight: 56, fontSize: 17 }}
             >
               {loading ? 'Sending...' : 'Send Confirmation Link'}
             </button>
@@ -158,34 +395,24 @@ export default function Home() {
             </div>
           )}
 
-          <p className="mt-6 text-sm text-center" style={{ color: 'var(--muted)' }}>
+          <p className="text-center" style={{ fontSize: 13, color: 'var(--muted)', marginTop: 20 }}>
             We'll send you a confirmation link to sign in. No password needed!
           </p>
         </div>
 
-        {/* Feature Highlights */}
-        <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-3xl mb-2">🌈</div>
-            <p className="text-sm font-semibold" style={{ color: 'var(--body-text)' }}>Colorful Variety</p>
-          </div>
-          <div>
-            <div className="text-3xl mb-2">📊</div>
-            <p className="text-sm font-semibold" style={{ color: 'var(--body-text)' }}>Track Progress</p>
-          </div>
-          <div>
-            <div className="text-3xl mb-2">🌱</div>
-            <p className="text-sm font-semibold" style={{ color: 'var(--body-text)' }}>Learn Nutrition</p>
-          </div>
-        </div>
-
         {/* Legal links */}
-        <div className="mt-8 flex items-center justify-center gap-3 text-xs" style={{ color: 'var(--faint)' }}>
+        <div className="flex items-center justify-center" style={{ gap: 12, fontSize: 12, color: 'var(--faint)' }}>
           <a href="/privacy" className="hover:underline">Privacy Policy</a>
           <span>·</span>
           <a href="/terms" className="hover:underline">Terms of Service</a>
         </div>
       </div>
+
+      <style jsx>{`
+        .pp-demo-wheel > div {
+          transition: background 0.55s ease;
+        }
+      `}</style>
     </div>
   );
 }
