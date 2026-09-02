@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { FoodLog, User, getWeekDates, formatLocalDate } from '@/lib/types';
-import { getPlantColorInfo, PlantColorKey } from '@/lib/plant-colors';
+import { getPlantColorInfo, isPlantColorKey, PlantColorKey } from '@/lib/plant-colors';
 import AddFoodModal from '../components/AddFoodModal';
+import PhotoLogModal from '../components/PhotoLogModal';
 import WeeklyHistory from '../components/WeeklyHistory';
 import ShareCard from '../components/ShareCard';
 import ColorWheel from '../components/ColorWheel';
@@ -15,6 +16,7 @@ export default function Dashboard() {
   const [foodLogs, setFoodLogs] = useState<FoodLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddFoodModal, setShowAddFoodModal] = useState(false);
+  const [showPhotoLogModal, setShowPhotoLogModal] = useState(false);
 
   const weekDates = getWeekDates();
   const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -83,8 +85,14 @@ export default function Dashboard() {
   });
   const colorCounts: Partial<Record<PlantColorKey, number>> = {};
   uniqueLogsById.forEach(log => {
-    const info = getPlantColorInfo(log.food_name);
-    if (info?.color) colorCounts[info.color] = (colorCounts[info.color] || 0) + 1;
+    // Photo-logged entries carry Gemini's visual color read, which can be
+    // more accurate than name-inference (e.g. dish color varies by prep).
+    // Manual entries have no stored color, so fall back to inferring one
+    // from the food name like before.
+    const color = isPlantColorKey(log.color_category)
+      ? log.color_category
+      : getPlantColorInfo(log.food_name)?.color;
+    if (color) colorCounts[color] = (colorCounts[color] || 0) + 1;
   });
 
   if (loading) {
@@ -193,13 +201,21 @@ export default function Dashboard() {
           />
         )}
 
-        {/* Add Food Button */}
-        <button
-          onClick={() => setShowAddFoodModal(true)}
-          className="pp-btn-primary w-full text-lg mb-8"
-        >
-          + Add a Food
-        </button>
+        {/* Add Food Buttons */}
+        <div className="flex mb-8" style={{ gap: 10 }}>
+          <button
+            onClick={() => setShowAddFoodModal(true)}
+            className="pp-btn-primary flex-1 text-lg"
+          >
+            + Add a Food
+          </button>
+          <button
+            onClick={() => setShowPhotoLogModal(true)}
+            className="pp-btn-secondary flex-1 text-lg"
+          >
+            📷 Log from Photo
+          </button>
+        </div>
 
         {/* Weekly History */}
         <WeeklyHistory
@@ -222,6 +238,13 @@ export default function Dashboard() {
       <AddFoodModal
         isOpen={showAddFoodModal}
         onClose={() => setShowAddFoodModal(false)}
+        onFoodAdded={loadUserAndFoods}
+      />
+
+      {/* Photo Log Modal */}
+      <PhotoLogModal
+        isOpen={showPhotoLogModal}
+        onClose={() => setShowPhotoLogModal(false)}
         onFoodAdded={loadUserAndFoods}
       />
     </div>

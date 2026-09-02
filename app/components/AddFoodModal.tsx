@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { searchFoods, customFoodId } from '@/lib/usda-api';
+import { searchFoods, customFoodId, pickBestMatch } from '@/lib/usda-api';
 import { USDAFood, formatLocalDate } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import { getPlantColorInfo, PLANT_COLOR_HEX } from '@/lib/plant-colors';
@@ -14,27 +14,6 @@ interface AddFoodModalProps {
   isOpen: boolean;
   onClose: () => void;
   onFoodAdded: () => void;
-}
-
-// Picks the most generic / canonical-feeling result to lead with as the
-// "Best match" — the fewest-word name among the top few relevance-ranked
-// results (e.g. "Apples" over "Honeycrisp Apples"). Everything else is
-// still shown, just grouped under "Other matches" instead of hidden.
-function pickBestMatch(foods: USDAFood[]): { best: USDAFood | null; rest: USDAFood[] } {
-  if (foods.length === 0) return { best: null, rest: [] };
-  const searchWindow = Math.min(foods.length, 8);
-  let bestIndex = 0;
-  let bestWordCount = foods[0].description.split(/\s+/).length;
-  for (let i = 1; i < searchWindow; i++) {
-    const wordCount = foods[i].description.split(/\s+/).length;
-    if (wordCount < bestWordCount) {
-      bestWordCount = wordCount;
-      bestIndex = i;
-    }
-  }
-  const best = foods[bestIndex];
-  const rest = foods.filter((_, i) => i !== bestIndex);
-  return { best, rest };
 }
 
 function SearchIcon() {

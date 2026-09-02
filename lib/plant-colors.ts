@@ -43,6 +43,31 @@ const COLOR_LABEL: Record<PlantColorKey, string> = {
   purple: 'Purple',
 };
 
+// The taxonomy's 6 colors, in wheel order. Single source of truth for
+// anything that needs to enumerate or validate against the color set
+// (Gemini's response schema, form pickers, etc.).
+export const PLANT_COLOR_KEYS: PlantColorKey[] = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'];
+
+export function isPlantColorKey(value: unknown): value is PlantColorKey {
+  return typeof value === 'string' && (PLANT_COLOR_KEYS as string[]).includes(value);
+}
+
+export function plantColorLabel(color: PlantColorKey): string {
+  return COLOR_LABEL[color];
+}
+
+// A few representative example foods per color, used to calibrate the
+// photo-identification prompt so the model picks from *our* categories
+// instead of inventing generic color names.
+export const PLANT_COLOR_EXAMPLES: Record<PlantColorKey, string[]> = {
+  red: ['strawberries', 'tomatoes', 'red bell pepper', 'watermelon', 'cherries'],
+  orange: ['carrots', 'sweet potato', 'mango', 'orange', 'butternut squash'],
+  yellow: ['corn', 'banana', 'yellow squash', 'pineapple', 'lemon'],
+  green: ['spinach', 'broccoli', 'green beans', 'avocado', 'kiwi'],
+  blue: ['blueberries'],
+  purple: ['eggplant', 'purple cabbage', 'blackberries', 'plums', 'grapes'],
+};
+
 // [keywords, color, category] — keywords are matched as whole words/phrases
 // against the lowercased food name. Longer/more specific phrases are checked
 // first so "sweet potato" wins over the bare "potato" entry, etc.

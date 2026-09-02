@@ -513,3 +513,101 @@ body {
   font-size: 14px;
   line-height: 1.6;
 }
+
+/* ---- Photo log (camera capture + review) ---- */
+.pp-photo-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 200px;
+  border: 2px dashed var(--border-warm);
+  border-radius: var(--r-card);
+  background: var(--surface-soft);
+  color: var(--muted);
+  text-align: center;
+  padding: 20px;
+}
+
+.pp-photo-preview {
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: var(--r-card);
+  background: var(--surface-soft);
+  display: block;
+}
+
+.pp-review-name-input {
+  font-family: var(--font-poppins), sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink);
+  border: none;
+  background: transparent;
+  padding: 0;
+  width: 100%;
+  min-width: 0;
+}
+.pp-review-name-input:focus {
+  outline: none;
+}
+
+.pp-badge-warn {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #a15c00;
+  background: #fff2d9;
+  border-radius: var(--r-pill);
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.pp-color-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pp-color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.pp-color-swatch--selected {
+  border-color: var(--ink);
+}
+.pp-color-swatch--other {
+  background: var(--surface-chip);
+  border: 2px dashed var(--faint);
+}
+.pp-color-swatch--other.pp-color-swatch--selected {
+  border-style: solid;
+  border-color: var(--ink);
+}
+
+.pp-remove-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pp-remove-btn:hover {
+  background: var(--surface-chip);
+  color: var(--primary-magenta);
+}
