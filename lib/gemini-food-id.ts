@@ -1,6 +1,8 @@
 import { PLANT_COLOR_EXAMPLES, PLANT_COLOR_KEYS, PlantColorKey, isPlantColorKey } from './plant-colors';
 
-const GEMINI_MODEL = 'gemini-2.5-flash-lite';
+// gemini-2.5-flash-lite was deprecated for new API keys (404s with a
+// redirect message pointing here) — this is its direct replacement.
+const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 export interface IdentifiedFoodItem {
@@ -96,6 +98,11 @@ export async function identifyFoodsInPhoto(imageBase64: string, mimeType: string
   }
 
   if (!response.ok) {
+    // The generic client-facing message intentionally doesn't leak upstream
+    // API details, but logging the body means a future failure is
+    // diagnosable from Vercel's function logs instead of requiring a
+    // manual repro against the Gemini API to find out what broke.
+    console.error(`Gemini API error (${response.status}):`, await response.text().catch(() => '<no body>'));
     throw new GeminiIdentifyError(
       response.status === 429
         ? 'Photo identification is busy right now. Please try again in a moment.'
