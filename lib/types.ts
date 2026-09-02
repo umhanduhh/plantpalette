@@ -19,6 +19,10 @@ export interface FoodLog {
   logged_date: string; // DATE
   logged_at: string;   // TIMESTAMP
   created_at: string;
+  color_category?: string | null;  // PlantColorKey, set for photo-identified entries; null/undefined falls back to name inference
+  confidence?: number | null;      // 0-1, identification confidence for photo-identified entries
+  source?: 'manual' | 'photo';     // how the entry was logged; defaults to 'manual'
+  source_image?: string | null;    // Supabase Storage path to the source plate photo
 }
 
 export interface Food {

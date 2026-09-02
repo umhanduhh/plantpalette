@@ -1,6 +1,5 @@
 import { USDASearchResponse, USDAFood } from './types';
 
-const USDA_API_KEY = process.env.NEXT_PUBLIC_USDA_API_KEY!;
 const USDA_BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
 
 // Foundation + SR Legacy food categories that represent whole plant foods.
@@ -269,13 +268,13 @@ function matchesQuery(description: string, query: string): boolean {
   return q.split(/\s+/).every(word => text.includes(word));
 }
 
-async function fetchUsda(query: string, dataType: string, pageSize: number) {
+async function fetchUsda(query: string, dataType: string, pageSize: number, apiKey: string) {
   const response = await fetch(
     `${USDA_BASE_URL}/foods/search` +
     `?query=${encodeURIComponent(query)}` +
     `&dataType=${encodeURIComponent(dataType)}` +
     `&pageSize=${pageSize}` +
-    `&api_key=${USDA_API_KEY}`
+    `&api_key=${apiKey}`
   );
   if (!response.ok) {
     throw new Error('Failed to fetch foods from USDA API');
@@ -283,14 +282,21 @@ async function fetchUsda(query: string, dataType: string, pageSize: number) {
   return response.json();
 }
 
-export async function searchFoods(query: string, pageSize: number = 100): Promise<USDASearchResponse> {
+// apiKey defaults to the public client-side key (existing search UI usage).
+// Server-only callers (e.g. the photo-log FDC match route) pass FDC_API_KEY
+// explicitly instead, since that key must never reach the browser.
+export async function searchFoods(
+  query: string,
+  pageSize: number = 100,
+  apiKey: string = process.env.NEXT_PUBLIC_USDA_API_KEY!
+): Promise<USDASearchResponse> {
   try {
     // Foundation + SR Legacy (whole-food reference data) and Branded
     // (packaged products) use different category taxonomies and naming
     // conventions, so they're fetched and filtered separately, then merged.
     const [wholeFoodData, brandedData] = await Promise.all([
-      fetchUsda(query, 'Foundation,SR Legacy', pageSize),
-      fetchUsda(query, 'Branded', 50),
+      fetchUsda(query, 'Foundation,SR Legacy', pageSize, apiKey),
+      fetchUsda(query, 'Branded', 50, apiKey),
     ]);
 
     // Dedupe by canonical name (prefer Foundation, then SR Legacy, then
@@ -342,10 +348,10 @@ export async function searchFoods(query: string, pageSize: number = 100): Promis
   }
 }
 
-export async function getFoodDetails(fdcId: number) {
+export async function getFoodDetails(fdcId: number, apiKey: string = process.env.NEXT_PUBLIC_USDA_API_KEY!) {
   try {
     const response = await fetch(
-      `${USDA_BASE_URL}/food/${fdcId}?api_key=${USDA_API_KEY}`
+      `${USDA_BASE_URL}/food/${fdcId}?api_key=${apiKey}`
     );
 
     if (!response.ok) {
@@ -357,4 +363,87 @@ export async function getFoodDetails(fdcId: number) {
     console.error('USDA API error:', error);
     throw new Error('Couldn\'t load food details.');
   }
+}
+
+// Picks the most generic / canonical-feeling result to lead with as the
+// "Best match" — the fewest-word name among the top few relevance-ranked
+// results (e.g. "Apples" over "Honeycrisp Apples"). Shared by the manual
+// search UI and the photo-log FDC matching step so both surface the same
+// notion of "best match" for a given query.
+export function pickBestMatch(foods: USDAFood[]): { best: USDAFood | null; rest: USDAFood[] } {
+  if (foods.length === 0) return { best: null, rest: [] };
+  const searchWindow = Math.min(foods.length, 8);
+  let bestIndex = 0;
+  let bestWordCount = foods[0].description.split(/\s+/).length;
+  for (let i = 1; i < searchWindow; i++) {
+    const wordCount = foods[i].description.split(/\s+/).length;
+    if (wordCount < bestWordCount) {
+      bestWordCount = wordCount;
+      bestIndex = i;
+    }
+  }
+  const best = foods[bestIndex];
+  const rest = foods.filter((_, i) => i !== bestIndex);
+  return { best, rest };
+}
+
+// Cooking-method / prep words that a vision model tends to prepend to a
+// food name (e.g. "Grilled Asparagus", "Steamed Broccoli"). Stripped for a
+// simplified retry when the full name doesn't match anything in FDC —
+// USDA's plant-food entries are indexed mostly by the bare food name.
+const RETRY_STRIP_WORDS = new Set([
+  'grilled', 'roasted', 'steamed', 'sauteed', 'sautéed', 'fried', 'baked',
+  'boiled', 'braised', 'poached', 'blanched', 'stir-fried', 'stir fried',
+  'raw', 'cooked', 'fresh', 'sliced', 'diced', 'chopped', 'mashed',
+  'shredded', 'whole', 'grated', 'pureed', 'mixed', 'assorted',
+]);
+
+function simplifyFoodNameForRetry(name: string): string {
+  const words = name.trim().split(/\s+/).filter(w => !RETRY_STRIP_WORDS.has(w.toLowerCase()));
+  return words.join(' ').trim();
+}
+
+export interface FdcMatch {
+  fdcId: number;
+  food_data_type: string;
+  food_nutrients: USDAFood['foodNutrients'];
+  matched: boolean; // false when no FDC entry was found and fdcId is a synthetic customFoodId
+}
+
+// Matches a single (possibly vision-model-generated) food name to an FDC
+// entry, for the photo-log confirm step. Retries once with cooking-method
+// modifiers stripped if the first search comes up empty. Never throws for
+// "no results" — per spec, a food with no FDC match is still logged, just
+// without nutrient data, using the same synthetic negative id the manual
+// custom-food flow already uses.
+export async function matchFoodToFdc(foodName: string, apiKey: string): Promise<FdcMatch> {
+  const tryMatch = async (query: string) => {
+    const results = await searchFoods(query, 10, apiKey);
+    return pickBestMatch(results.foods || []).best;
+  };
+
+  let match = await tryMatch(foodName);
+
+  if (!match) {
+    const simplified = simplifyFoodNameForRetry(foodName);
+    if (simplified && simplified.toLowerCase() !== foodName.trim().toLowerCase()) {
+      match = await tryMatch(simplified);
+    }
+  }
+
+  if (!match) {
+    return {
+      fdcId: customFoodId(foodName),
+      food_data_type: 'Custom',
+      food_nutrients: [],
+      matched: false,
+    };
+  }
+
+  return {
+    fdcId: match.fdcId,
+    food_data_type: match.dataType,
+    food_nutrients: match.foodNutrients,
+    matched: true,
+  };
 }
