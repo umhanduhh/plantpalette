@@ -21,6 +21,14 @@ interface ReviewItem {
 
 type Step = 'capture' | 'identifying' | 'review' | 'saving' | 'success';
 
+// The photo-log API routes authenticate via a bearer token rather than
+// cookies (the app's client-side session lives in localStorage), so every
+// call to them needs the current access token attached explicitly.
+async function authHeader(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+}
+
 function genId(): string {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
@@ -236,7 +244,7 @@ export default function PhotoLogModal({ isOpen, onClose, onFoodAdded }: PhotoLog
     try {
       const res = await fetch('/api/photo-log/identify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
         body: JSON.stringify({ imageBase64, mimeType }),
       });
       const data = await res.json();
@@ -319,7 +327,7 @@ export default function PhotoLogModal({ isOpen, onClose, onFoodAdded }: PhotoLog
 
       const matchRes = await fetch('/api/photo-log/match', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
         body: JSON.stringify({ food_names: includedItems.map(i => i.food_name) }),
       });
       const matchData = await matchRes.json();
