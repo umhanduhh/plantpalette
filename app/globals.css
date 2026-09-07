@@ -611,3 +611,62 @@ body {
   background: var(--surface-chip);
   color: var(--primary-magenta);
 }
+
+/* ---- Article body (blog posts) ---- */
+.pp-prose {
+  color: var(--body-text);
+  font-size: 15.5px;
+  line-height: 1.7;
+}
+.pp-prose h2 {
+  font-family: var(--font-playfair), serif;
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--ink);
+  margin: 32px 0 12px;
+}
+.pp-prose h2:first-child {
+  margin-top: 0;
+}
+.pp-prose h3 {
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--ink);
+  margin: 20px 0 8px;
+}
+.pp-prose p {
+  margin: 0 0 16px;
+}
+.pp-prose ul,
+.pp-prose ol {
+  margin: 0 0 16px;
+  padding-left: 22px;
+}
+.pp-prose li {
+  margin-bottom: 6px;
+}
+.pp-prose a {
+  color: var(--primary-magenta);
+  text-decoration: underline;
+}
+.pp-prose strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+.pp-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 20px;
+  font-size: 14px;
+}
+.pp-prose th,
+.pp-prose td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-warm);
+}
+.pp-prose th {
+  color: var(--ink);
+  font-weight: 700;
+  background: var(--surface-chip);
+}
