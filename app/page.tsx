@@ -402,6 +402,8 @@ export default function Home() {
 
         {/* Legal links */}
         <div className="flex items-center justify-center" style={{ gap: 12, fontSize: 12, color: 'var(--faint)' }}>
+          <a href="/blog" className="hover:underline">Blog</a>
+          <span>·</span>
           <a href="/privacy" className="hover:underline">Privacy Policy</a>
           <span>·</span>
           <a href="/terms" className="hover:underline">Terms of Service</a>

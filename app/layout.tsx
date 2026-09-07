@@ -16,6 +16,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://platepalette.app"),
   title: "Plate Palette - Plant-Based Food Variety Tracker",
   description: "Track colorful, nutrient-dense foods each week. Celebrate variety and nutrition science.",
 };
