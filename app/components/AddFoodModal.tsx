@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { searchFoods, customFoodId, pickBestMatch } from '@/lib/usda-api';
+import { searchFoods, customFoodId, pickBestMatch, isAnimalProduct } from '@/lib/usda-api';
 import { USDAFood, formatLocalDate } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import { getPlantColorInfo, PLANT_COLOR_HEX } from '@/lib/plant-colors';
@@ -186,6 +186,7 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
   }
 
   function handleAddCustomFood(name: string) {
+    if (isAnimalProduct(name)) return;
     const food: USDAFood = {
       fdcId: customFoodId(name),
       description: toTitleCase(name),
@@ -379,8 +380,16 @@ export default function AddFoodModal({ isOpen, onClose, onFoodAdded }: AddFoodMo
                 <div className="pp-state-copy">{error}</div>
               )}
 
-              {/* No results — offer to add as a new food */}
-              {!loading && !error && noResultsQuery && (
+              {/* No results — offer to add as a new food, unless it's an animal product */}
+              {!loading && !error && noResultsQuery && isAnimalProduct(noResultsQuery) && (
+                <div className="pp-state-copy">
+                  <p>
+                    &ldquo;{toTitleCase(noResultsQuery)}&rdquo; isn&apos;t a plant-based food, so it can&apos;t be logged here.
+                  </p>
+                </div>
+              )}
+
+              {!loading && !error && noResultsQuery && !isAnimalProduct(noResultsQuery) && (
                 <div className="pp-state-copy">
                   <p className="mb-3">
                     We couldn&apos;t find &ldquo;{noResultsQuery}&rdquo; in our database.
