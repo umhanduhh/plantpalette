@@ -144,7 +144,10 @@ const REJECT_DESCRIPTION_FRAGMENTS = [
 // what it's imitating, not an ingredient — "veggie sausage" isn't sausage.
 const PLANT_QUALIFIER_PATTERN = /\b(veggie|vegetarian|vegan|meatless|mock|imitation)\b|plant[- ]based/i;
 
-function containsAnimalProduct(description: string): boolean {
+// Exported so callers outside this module (photo-log review, manual custom
+// food entry) can flag a raw, possibly user-typed or vision-model-generated
+// food name the same way USDA search results are filtered below.
+export function isAnimalProduct(description: string): boolean {
   if (PLANT_QUALIFIER_PATTERN.test(description)) return false;
   const words = description.toLowerCase().match(/\b[a-z]+\b/g) || [];
   return words.some(w => ANIMAL_PRODUCT_WORDS.has(w));
@@ -311,7 +314,7 @@ export async function searchFoods(
       if (category === 'Fats and Oils' && !isAllowedOil(food.description)) continue;
       if (category === 'Beverages' && !isAllowedBeverage(food.description)) continue;
 
-      if (containsAnimalProduct(food.description)) continue;
+      if (isAnimalProduct(food.description)) continue;
       if (isRejectedDescription(food.description)) continue;
       if (isBrandedDescription(food.description)) continue;
       if (!matchesQuery(food.description, query)) continue;
@@ -328,7 +331,7 @@ export async function searchFoods(
       const category = (food as { foodCategory?: string }).foodCategory;
       if (!category || !BRANDED_ALLOWED_CATEGORIES.has(category)) continue;
 
-      if (containsAnimalProduct(food.description)) continue;
+      if (isAnimalProduct(food.description)) continue;
       if (isRejectedDescription(food.description)) continue;
       if (!matchesQuery(food.description, query)) continue;
 

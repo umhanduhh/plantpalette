@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { getWeekDates, formatLocalDate } from '@/lib/types';
 import { PLANT_COLOR_HEX, PLANT_COLOR_KEYS, PlantColorKey, plantColorLabel } from '@/lib/plant-colors';
 import { processImageFile } from '@/lib/image-utils';
+import { isAnimalProduct } from '@/lib/usda-api';
 
 const LOW_CONFIDENCE_THRESHOLD = 0.6;
 const STORAGE_BUCKET = 'plate-photos';
@@ -17,6 +18,7 @@ interface ReviewItem {
   visual_description: string;
   included: boolean;
   isCustom: boolean;
+  isAnimalProduct: boolean;
 }
 
 type Step = 'capture' | 'identifying' | 'review' | 'saving' | 'success';
@@ -150,7 +152,8 @@ function ReviewRow({
         )}
         <div className="flex items-center" style={{ gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
           <ColorPicker selected={item.estimated_color} onSelect={onColorChange} />
-          {lowConfidence && <span className="pp-badge-warn">Low confidence — check this</span>}
+          {item.isAnimalProduct && <span className="pp-badge-warn">Not plant-based — won&apos;t be logged</span>}
+          {!item.isAnimalProduct && lowConfidence && <span className="pp-badge-warn">Low confidence — check this</span>}
         </div>
       </div>
 
@@ -158,6 +161,7 @@ function ReviewRow({
         <button
           type="button"
           onClick={onToggleIncluded}
+          disabled={item.isAnimalProduct}
           className={`pp-add-btn ${item.included ? 'pp-add-btn--added' : ''}`}
           aria-pressed={item.included}
           aria-label={item.included ? `Exclude ${item.food_name}` : `Include ${item.food_name}`}
@@ -253,15 +257,19 @@ export default function PhotoLogModal({ isOpen, onClose, onFoodAdded }: PhotoLog
         throw new Error(data.error || 'Photo identification failed. Please try again.');
       }
 
-      const reviewItems: ReviewItem[] = (data.items || []).map((item: any) => ({
-        id: genId(),
-        food_name: item.food_name,
-        estimated_color: item.estimated_color,
-        confidence: item.confidence,
-        visual_description: item.visual_description || '',
-        included: item.confidence >= LOW_CONFIDENCE_THRESHOLD,
-        isCustom: false,
-      }));
+      const reviewItems: ReviewItem[] = (data.items || []).map((item: any) => {
+        const flaggedAsAnimalProduct = isAnimalProduct(item.food_name);
+        return {
+          id: genId(),
+          food_name: item.food_name,
+          estimated_color: item.estimated_color,
+          confidence: item.confidence,
+          visual_description: item.visual_description || '',
+          included: item.confidence >= LOW_CONFIDENCE_THRESHOLD && !flaggedAsAnimalProduct,
+          isCustom: false,
+          isAnimalProduct: flaggedAsAnimalProduct,
+        };
+      });
 
       setItems(reviewItems);
       setStep('review');
@@ -273,7 +281,7 @@ export default function PhotoLogModal({ isOpen, onClose, onFoodAdded }: PhotoLog
   }
 
   function toggleIncluded(id: string) {
-    setItems(prev => prev.map(i => (i.id === id ? { ...i, included: !i.included } : i)));
+    setItems(prev => prev.map(i => (i.id === id && !i.isAnimalProduct ? { ...i, included: !i.included } : i)));
   }
 
   function removeItem(id: string) {
@@ -281,7 +289,11 @@ export default function PhotoLogModal({ isOpen, onClose, onFoodAdded }: PhotoLog
   }
 
   function updateName(id: string, name: string) {
-    setItems(prev => prev.map(i => (i.id === id ? { ...i, food_name: name } : i)));
+    setItems(prev => prev.map(i => {
+      if (i.id !== id) return i;
+      const flaggedAsAnimalProduct = isAnimalProduct(name);
+      return { ...i, food_name: name, isAnimalProduct: flaggedAsAnimalProduct, included: flaggedAsAnimalProduct ? false : i.included };
+    }));
   }
 
   function updateColor(id: string, color: PlantColorKey | null) {
@@ -291,6 +303,7 @@ export default function PhotoLogModal({ isOpen, onClose, onFoodAdded }: PhotoLog
   function handleAddCustomFood() {
     const name = customFoodName.trim();
     if (!name) return;
+    const flaggedAsAnimalProduct = isAnimalProduct(name);
     setItems(prev => [
       ...prev,
       {
@@ -299,15 +312,16 @@ export default function PhotoLogModal({ isOpen, onClose, onFoodAdded }: PhotoLog
         estimated_color: null,
         confidence: 1,
         visual_description: '',
-        included: true,
+        included: !flaggedAsAnimalProduct,
         isCustom: true,
+        isAnimalProduct: flaggedAsAnimalProduct,
       },
     ]);
     setCustomFoodName('');
   }
 
   async function handleSave() {
-    const includedItems = items.filter(i => i.included && i.food_name.trim());
+    const includedItems = items.filter(i => i.included && i.food_name.trim() && !i.isAnimalProduct);
     if (includedItems.length === 0 || !photoBlob) return;
 
     setStep('saving');
